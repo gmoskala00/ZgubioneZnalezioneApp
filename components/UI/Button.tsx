@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
   container: {
     padding: 8,
     backgroundColor: GlobalStyles.colors.primary,
-    borderRadius: 6,
+    borderRadius: 10,
   },
   text: {
     fontFamily: "Nunito-Bold",

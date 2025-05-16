@@ -1,5 +1,6 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Button from "../../components/UI/Button";
+import Input from "../../components/UI/Input";
 
 const LoginScreen = () => {
   return (
@@ -7,6 +8,7 @@ const LoginScreen = () => {
       <Button onPress={() => {}} style={styles.button}>
         Text
       </Button>
+      <Input onUpdateValue={() => {}} value="" placeholder="E-mail"></Input>
     </View>
   );
 };
