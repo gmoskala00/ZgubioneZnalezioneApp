@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Slot } from "expo-router";
+import { Stack } from "expo-router";
 import { View } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import * as Font from "expo-font";
@@ -39,7 +39,10 @@ export default function RootLayout() {
 
   return (
     <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <Slot />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="auth" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
     </View>
   );
 }

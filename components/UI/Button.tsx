@@ -13,10 +13,11 @@ const Button = ({ children, onPress, style }: ButtonProps) => {
       <Pressable
         onPress={onPress}
         style={({ pressed }) => pressed && styles.pressed}
-      ></Pressable>
-      <View style={styles.container}>
-        <Text style={styles.text}>{children}</Text>
-      </View>
+      >
+        <View style={styles.container}>
+          <Text style={styles.text}>{children}</Text>
+        </View>
+      </Pressable>
     </View>
   );
 };
@@ -30,10 +31,10 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   text: {
-    fontFamily: "Nunito-Regular",
-    fontSize: 14,
+    fontFamily: "Nunito-Bold",
+    fontSize: 16,
     textAlign: "center",
-    color: GlobalStyles.colors.textPrimary,
+    color: "white",
   },
   pressed: {
     opacity: 0.75,

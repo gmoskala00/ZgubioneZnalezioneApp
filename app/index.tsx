@@ -1,22 +1,12 @@
-import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect } from "react";
+import { router } from "expo-router";
 
-export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text style={{ fontFamily: "Nunito-Regular" }}>
-        Open up App.tsx to start working on your app!
-      </Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+export default function AppEntry() {
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      router.replace("/auth/login");
+    }, 0);
+  }, []);
+
+  return null;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
