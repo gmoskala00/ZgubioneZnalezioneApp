@@ -37,10 +37,10 @@ export default Input;
 
 const styles = StyleSheet.create({
   inputContainer: {
-    margin: 8,
+    margin: 10,
   },
   input: {
-    padding: 16,
+    padding: 12,
     backgroundColor: "white",
     color: GlobalStyles.colors.textPrimary,
     borderRadius: 32,

@@ -26,13 +26,13 @@ export default Button;
 
 const styles = StyleSheet.create({
   container: {
-    padding: 8,
+    padding: 12,
     backgroundColor: GlobalStyles.colors.primary,
-    borderRadius: 10,
+    borderRadius: 16,
   },
   text: {
     fontFamily: "Nunito-Bold",
-    fontSize: 16,
+    fontSize: 18,
     textAlign: "center",
     color: "white",
   },
