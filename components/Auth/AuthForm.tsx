@@ -2,20 +2,15 @@ import { StyleSheet, View } from "react-native";
 import Button from "../UI/Button";
 import Input from "../UI/Input";
 import { useState } from "react";
-import { AuthCredentials } from "../../models/auth";
+import { AuthCredentials, AuthValidationState } from "../../models/auth";
 
 type AuthFormProps = {
   isLogin: boolean;
-  credentialsInvalid: {
-    username: boolean;
-    email: boolean;
-    password: boolean;
-    confirmPassword: boolean;
-    phoneNumber: boolean;
-  };
+  credentialsInvalid: AuthValidationState;
+  onSubmit: (credentials: AuthCredentials) => void;
 };
 
-const AuthForm = ({ isLogin, credentialsInvalid }: AuthFormProps) => {
+const AuthForm = ({ isLogin, credentialsInvalid, onSubmit }: AuthFormProps) => {
   const [enteredUsername, setEnteredUsername] = useState("");
   const [enteredEmail, setEnteredEmail] = useState("");
   const [enteredPassword, setEnteredPassword] = useState("");
@@ -53,6 +48,16 @@ const AuthForm = ({ isLogin, credentialsInvalid }: AuthFormProps) => {
     }
   };
 
+  const submitHandler = () => {
+    onSubmit({
+      username: enteredUsername,
+      email: enteredEmail,
+      password: enteredPassword,
+      confirmPassword: enteredConfirmPassword,
+      phoneNumber: enteredPhoneNumber,
+    });
+  };
+
   return (
     <View>
       {!isLogin && (
@@ -60,23 +65,29 @@ const AuthForm = ({ isLogin, credentialsInvalid }: AuthFormProps) => {
           onUpdateValue={(value) => updateInputHandler("username", value)}
           value={enteredUsername}
           placeholder="Username"
-          isInvalid={credentialsInvalid.username}
-        ></Input>
+          isInvalid={usernameIsInvalid}
+        />
       )}
       <Input
         onUpdateValue={(value) => updateInputHandler("email", value)}
         value={enteredEmail}
         placeholder="E-mail"
-        isInvalid={credentialsInvalid.email}
+        isInvalid={emailIsInvalid}
         keyboardType="email-address"
-      ></Input>
+        errorMessage="Invalid e-mail"
+      />
       <Input
         onUpdateValue={(value) => updateInputHandler("password", value)}
         value={enteredPassword}
         placeholder="Password"
         secure
-        isInvalid={credentialsInvalid.password}
-      ></Input>
+        isInvalid={passwordIsInvalid}
+        errorMessage={
+          isLogin
+            ? "Invalid Password"
+            : "Password must contain 6 letters and one number"
+        }
+      />
       {!isLogin && (
         <Input
           onUpdateValue={(value) =>
@@ -85,19 +96,21 @@ const AuthForm = ({ isLogin, credentialsInvalid }: AuthFormProps) => {
           value={enteredConfirmPassword}
           placeholder="Confim Password"
           secure
-          isInvalid={credentialsInvalid.confirmPassword}
-        ></Input>
+          isInvalid={passwordsDontMatch}
+          errorMessage="Passwords do not match"
+        />
       )}
       {!isLogin && (
         <Input
           onUpdateValue={(value) => updateInputHandler("phoneNumber", value)}
           value={enteredPhoneNumber}
           placeholder="Phone Number (optional)"
-          isInvalid={credentialsInvalid.phoneNumber}
+          isInvalid={phoneNumberIsInvalid}
           keyboardType="phone-pad"
-        ></Input>
+          errorMessage="Phone Number is not correct"
+        />
       )}
-      <Button onPress={() => {}} style={styles.button}>
+      <Button onPress={submitHandler} style={styles.button}>
         {isLogin ? "Log In" : "Sign Up"}
       </Button>
     </View>

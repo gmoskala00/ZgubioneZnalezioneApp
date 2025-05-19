@@ -1,4 +1,10 @@
-import { KeyboardTypeOptions, StyleSheet, TextInput, View } from "react-native";
+import {
+  KeyboardTypeOptions,
+  StyleSheet,
+  TextInput,
+  View,
+  Text,
+} from "react-native";
 import { GlobalStyles } from "../../constants/style";
 
 type InputProps = {
@@ -8,6 +14,7 @@ type InputProps = {
   onUpdateValue: (text: string) => void;
   value: string;
   isInvalid?: boolean;
+  errorMessage?: string;
 };
 
 const Input = ({
@@ -17,6 +24,7 @@ const Input = ({
   onUpdateValue,
   value,
   isInvalid = false,
+  errorMessage,
 }: InputProps) => {
   return (
     <View style={styles.inputContainer}>
@@ -29,6 +37,11 @@ const Input = ({
         secureTextEntry={secure}
         keyboardType={keyboardType}
       ></TextInput>
+      {isInvalid && (
+        <View style={styles.invalidContainer}>
+          <Text style={styles.invalidText}>{errorMessage}</Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -51,5 +64,13 @@ const styles = StyleSheet.create({
   },
   invalidInput: {
     borderColor: GlobalStyles.colors.error,
+  },
+  invalidContainer: {
+    margin: 2,
+  },
+  invalidText: {
+    color: GlobalStyles.colors.error,
+    fontSize: 10,
+    fontFamily: "Nunito-Italic",
   },
 });

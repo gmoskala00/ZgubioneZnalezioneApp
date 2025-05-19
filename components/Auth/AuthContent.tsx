@@ -1,19 +1,25 @@
-import { StyleSheet, View, Button } from "react-native";
-import AuthForm from "./AuthForm";
+import { StyleSheet, View } from "react-native";
+import { Alert } from "react-native";
 import { router } from "expo-router";
+
+import AuthForm from "./AuthForm";
+import Button from "../UI/Button";
+import { useState } from "react";
+import { AuthValidationState, AuthCredentials } from "../../models/auth";
 
 type AuthContentProps = {
   isLogin: boolean;
 };
 
 const AuthContent = ({ isLogin }: AuthContentProps) => {
-  const testinvalids = {
-    username: false,
-    email: false,
-    password: false,
-    confirmPassword: false,
-    phoneNumber: false,
-  };
+  const [credentialsInvalid, setCredentialsInvalid] =
+    useState<AuthValidationState>({
+      username: false,
+      email: false,
+      password: false,
+      confirmPassword: false,
+      phoneNumber: false,
+    });
 
   const switchAuthModeHandler = () => {
     if (isLogin) {
@@ -23,14 +29,65 @@ const AuthContent = ({ isLogin }: AuthContentProps) => {
     }
   };
 
+  function submitHandler(credentials: AuthCredentials) {
+    let { username, email, password, confirmPassword, phoneNumber } =
+      credentials;
+
+    username = username.trim();
+    email = email.trim();
+    password = password.trim();
+    confirmPassword = confirmPassword.trim();
+    phoneNumber = phoneNumber?.trim() || "";
+
+    const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const passwordIsValid = password.length >= 6 && /\d/.test(password);
+    const passwordsAreEqual = password === confirmPassword;
+    const usernameIsValid =
+      isLogin || (username.length >= 3 && !/\s/.test(username));
+    const phoneIsValid = !phoneNumber || /^\+?\d{9,15}$/.test(phoneNumber);
+
+    const formIsValid =
+      emailIsValid &&
+      passwordIsValid &&
+      (isLogin || passwordsAreEqual) &&
+      (isLogin || usernameIsValid) &&
+      phoneIsValid;
+
+    if (!formIsValid) {
+      Alert.alert("Invalid input", "Please check your entered credentials.");
+
+      const invalid: AuthValidationState = {
+        email: !emailIsValid,
+        password: !passwordIsValid,
+        confirmPassword: isLogin
+          ? false
+          : !passwordsAreEqual || !passwordIsValid,
+        username: isLogin ? false : !usernameIsValid,
+        phoneNumber: !phoneIsValid,
+      };
+
+      setCredentialsInvalid(invalid);
+      return;
+    }
+
+    // onAuthenticate({ username, email, password, confirmPassword, phoneNumber });
+  }
+
   return (
     <View style={styles.wrapper}>
       <View style={styles.container}>
-        <AuthForm isLogin={isLogin} credentialsInvalid={testinvalids} />
+        <AuthForm
+          isLogin={isLogin}
+          credentialsInvalid={credentialsInvalid}
+          onSubmit={submitHandler}
+        />
         <Button
-          title={isLogin ? "Create an Account" : "Log In instead"}
           onPress={switchAuthModeHandler}
-        ></Button>
+          mode="flat"
+          style={styles.button}
+        >
+          {isLogin ? "Create an Account" : "Log In instead"}
+        </Button>
       </View>
     </View>
   );
@@ -53,8 +110,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   button: {
-    marginTop: 16,
-    marginHorizontal: 24,
-    justifyContent: "center",
+    marginTop: 8,
   },
 });
