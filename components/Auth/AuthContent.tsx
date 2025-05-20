@@ -9,9 +9,10 @@ import { AuthValidationState, AuthCredentials } from "../../models/auth";
 
 type AuthContentProps = {
   isLogin: boolean;
+  onAuthenticate: (credentials: AuthCredentials) => void;
 };
 
-const AuthContent = ({ isLogin }: AuthContentProps) => {
+const AuthContent = ({ isLogin, onAuthenticate }: AuthContentProps) => {
   const [credentialsInvalid, setCredentialsInvalid] =
     useState<AuthValidationState>({
       username: false,
@@ -69,8 +70,15 @@ const AuthContent = ({ isLogin }: AuthContentProps) => {
       setCredentialsInvalid(invalid);
       return;
     }
+    setCredentialsInvalid({
+      username: false,
+      email: false,
+      password: false,
+      confirmPassword: false,
+      phoneNumber: false,
+    });
 
-    // onAuthenticate({ username, email, password, confirmPassword, phoneNumber });
+    onAuthenticate({ username, email, password, confirmPassword, phoneNumber });
   }
 
   return (
