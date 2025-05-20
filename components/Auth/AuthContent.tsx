@@ -1,4 +1,4 @@
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, Text } from "react-native";
 import { Alert } from "react-native";
 import { router } from "expo-router";
 
@@ -76,6 +76,7 @@ const AuthContent = ({ isLogin }: AuthContentProps) => {
   return (
     <View style={styles.wrapper}>
       <View style={styles.container}>
+        <Text style={styles.title}>{isLogin ? "Login" : "Register"}</Text>
         <AuthForm
           isLogin={isLogin}
           credentialsInvalid={credentialsInvalid}
@@ -101,15 +102,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   container: {
-    marginBottom: 200,
+    marginBottom: 25,
     marginHorizontal: 50,
+    paddingVertical: 32,
+    paddingHorizontal: 20,
     backgroundColor: "white",
-    elevation: 16,
     borderRadius: 64,
-    paddingVertical: 64,
-    paddingHorizontal: 32,
+    elevation: 16,
+    shadowColor: "black",
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+  },
+  title: {
+    marginBottom: 24,
+    fontSize: 32,
+    fontFamily: "Nunito-Bold",
+    textAlign: "center",
   },
   button: {
-    marginTop: 8,
+    marginTop: 12,
   },
 });

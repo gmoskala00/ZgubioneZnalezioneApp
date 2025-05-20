@@ -43,6 +43,8 @@ const styles = StyleSheet.create({
     color: "white",
   },
   flatText: {
+    fontSize: 16,
+    fontFamily: "Nunito-Bold",
     color: GlobalStyles.colors.textSecondary,
   },
   pressed: {

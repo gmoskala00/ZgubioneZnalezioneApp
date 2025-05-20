@@ -1,13 +1,7 @@
-import { StyleSheet, Text, View } from "react-native";
+import AuthContent from "../../components/Auth/AuthContent";
 
 const RegisterScreen = () => {
-  return (
-    <View>
-      <Text>RegisterScreen</Text>
-    </View>
-  );
+  return <AuthContent isLogin={false} />;
 };
 
 export default RegisterScreen;
-
-const styles = StyleSheet.create({});

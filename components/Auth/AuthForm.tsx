@@ -66,6 +66,7 @@ const AuthForm = ({ isLogin, credentialsInvalid, onSubmit }: AuthFormProps) => {
           value={enteredUsername}
           placeholder="Username"
           isInvalid={usernameIsInvalid}
+          errorMessage="Username must be longer than 3 characters"
         />
       )}
       <Input
@@ -85,7 +86,7 @@ const AuthForm = ({ isLogin, credentialsInvalid, onSubmit }: AuthFormProps) => {
         errorMessage={
           isLogin
             ? "Invalid Password"
-            : "Password must contain 6 letters and one number"
+            : "Password must contain 6 characters and one number"
         }
       />
       {!isLogin && (
@@ -111,7 +112,7 @@ const AuthForm = ({ isLogin, credentialsInvalid, onSubmit }: AuthFormProps) => {
         />
       )}
       <Button onPress={submitHandler} style={styles.button}>
-        {isLogin ? "Log In" : "Sign Up"}
+        {isLogin ? "Log In" : "Register"}
       </Button>
     </View>
   );
@@ -122,5 +123,6 @@ export default AuthForm;
 const styles = StyleSheet.create({
   button: {
     marginTop: 16,
+    marginHorizontal: 32,
   },
 });
