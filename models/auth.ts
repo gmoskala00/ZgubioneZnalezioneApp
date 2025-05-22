@@ -13,3 +13,8 @@ export type AuthValidationState = {
   confirmPassword: boolean;
   phoneNumber: boolean;
 };
+
+export type LoginCredentials = {
+  email: string;
+  password: string;
+};
