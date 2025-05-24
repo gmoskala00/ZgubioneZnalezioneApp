@@ -1,18 +1,15 @@
 import { StyleSheet, Text, View } from "react-native";
 import Button from "../../components/UI/Button";
-import { router } from "expo-router";
+import { useAuth } from "../../store/AuthContext";
 
 const HomeScreen = () => {
+  const { userData, logout } = useAuth();
+  console.log(userData);
   return (
     <View>
       <Text>home</Text>
-      <Button
-        onPress={() => {
-          router.replace("/auth/login");
-        }}
-      >
-        BACK
-      </Button>
+      <Text>{userData?.username}</Text>
+      <Button onPress={logout}>BACK</Button>
     </View>
   );
 };

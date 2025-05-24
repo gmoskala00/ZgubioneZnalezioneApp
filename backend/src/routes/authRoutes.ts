@@ -38,16 +38,14 @@ router.post("/register", async (req: Request, res: Response): Promise<any> => {
 });
 
 router.post("/login", async (req: Request, res: Response): Promise<any> => {
-  const { identifier, password } = req.body;
+  const { email, password } = req.body;
 
-  if (!identifier || !password) {
+  if (!email || !password) {
     return res.status(400).json({ message: "Missing Required Fields" });
   }
 
   try {
-    const user = await User.findOne({
-      $or: [{ email: identifier }, { username: identifier }],
-    });
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res
@@ -63,7 +61,6 @@ router.post("/login", async (req: Request, res: Response): Promise<any> => {
       message: "Logged in Successfully",
       user: {
         _id: user?._id,
-        email: user?.email,
       },
     });
   } catch (error) {

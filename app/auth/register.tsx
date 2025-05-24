@@ -1,11 +1,12 @@
 import { Alert } from "react-native";
 import AuthContent from "../../components/Auth/AuthContent";
 import { AuthCredentials } from "../../models/auth";
+import { API_URL } from "../../constants/api";
 
 const RegisterScreen = () => {
   const registerUser = async (credentials: AuthCredentials) => {
     try {
-      const response = await fetch("http://10.0.2.2:5000/api/auth/register", {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

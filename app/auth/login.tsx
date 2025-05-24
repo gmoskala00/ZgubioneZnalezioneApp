@@ -2,11 +2,15 @@ import { Alert } from "react-native";
 import AuthContent from "../../components/Auth/AuthContent";
 import { LoginCredentials } from "../../models/auth";
 import { router } from "expo-router";
+import { API_URL } from "../../constants/api";
+import { useAuth } from "../../store/AuthContext";
 
 const LoginScreen = () => {
+  const { authenticate } = useAuth();
+
   const loginUser = async (credentials: LoginCredentials) => {
     try {
-      const response = await fetch("http://10.0.2.2:5000/api/auth/login", {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -20,14 +24,16 @@ const LoginScreen = () => {
         throw new Error(data.message || "Login Failed");
       }
 
-      Alert.alert("Logged in", "", [
-        {
-          text: "OK",
-          onPress: () => {
-            router.replace("/(tabs)/home");
-          },
-        },
-      ]);
+      authenticate(data.user._id);
+
+      // Alert.alert("Logged in", "", [
+      //   {
+      //     text: "OK",
+      //     onPress: () => {
+      //       router.replace("/(tabs)/home");
+      //     },
+      //   },
+      // ]);
     } catch (error) {
       Alert.alert("Login Failed ", (error as Error).message);
     }
