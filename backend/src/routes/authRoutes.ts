@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import bcrypt from "bcrypt";
 import User from "../models/User";
 
 const router = Router();
@@ -21,10 +22,11 @@ router.post("/register", async (req: Request, res: Response): Promise<any> => {
       return res.status(409).json({ message: "Username already taken" });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 12);
     const newUser = new User({
       username,
       email,
-      password,
+      password: hashedPassword,
       phoneNumber,
     });
 
@@ -53,7 +55,9 @@ router.post("/login", async (req: Request, res: Response): Promise<any> => {
         .json({ message: "Not Found account with given email" });
     }
 
-    if (password !== user.password) {
+    const passwordMatch = bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
       return res.status(401).json({ message: "Wrong password." });
     }
 

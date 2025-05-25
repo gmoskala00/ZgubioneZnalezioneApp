@@ -4,7 +4,6 @@ import User from "../models/User";
 const router = Router();
 
 router.get("/:id", async (req: Request, res: Response): Promise<any> => {
-  console.log("HEHE");
   const userId = req.params.id;
 
   console.log("USER ID: ", userId);

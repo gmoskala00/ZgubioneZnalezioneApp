@@ -1,7 +1,6 @@
 import { Alert } from "react-native";
 import AuthContent from "../../components/Auth/AuthContent";
 import { LoginCredentials } from "../../models/auth";
-import { router } from "expo-router";
 import { API_URL } from "../../constants/api";
 import { useAuth } from "../../store/AuthContext";
 
@@ -24,16 +23,11 @@ const LoginScreen = () => {
         throw new Error(data.message || "Login Failed");
       }
 
-      authenticate(data.user._id);
+      if (!data.user || !data.user._id) {
+        throw new Error("Invalid response from server.");
+      }
 
-      // Alert.alert("Logged in", "", [
-      //   {
-      //     text: "OK",
-      //     onPress: () => {
-      //       router.replace("/(tabs)/home");
-      //     },
-      //   },
-      // ]);
+      authenticate(data.user._id);
     } catch (error) {
       Alert.alert("Login Failed ", (error as Error).message);
     }
