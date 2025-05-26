@@ -27,7 +27,7 @@ const LoginScreen = () => {
         throw new Error("Invalid response from server.");
       }
 
-      authenticate(data.user._id);
+      authenticate(data.user._id, data.token);
     } catch (error) {
       Alert.alert("Login Failed ", (error as Error).message);
     }

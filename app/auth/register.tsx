@@ -2,9 +2,11 @@ import { Alert } from "react-native";
 import AuthContent from "../../components/Auth/AuthContent";
 import { AuthCredentials } from "../../models/auth";
 import { API_URL } from "../../constants/api";
-import { router } from "expo-router";
+import { useAuth } from "../../store/AuthContext";
 
 const RegisterScreen = () => {
+  const { authenticate } = useAuth();
+
   const registerUser = async (credentials: AuthCredentials) => {
     try {
       const response = await fetch(`${API_URL}/api/auth/register`, {
@@ -21,8 +23,7 @@ const RegisterScreen = () => {
         throw new Error(data.message || "Registration failed");
       }
 
-      router.replace("/auth/login");
-      Alert.alert("✅ Registered:", data.message);
+      authenticate(data.user._id, data.token);
     } catch (err) {
       Alert.alert("❌ Registration Fail:", (err as Error).message);
     }

@@ -1,8 +1,10 @@
 import { Router, Request, Response } from "express";
+import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import User from "../models/User";
 
 const router = Router();
+const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
 router.post("/register", async (req: Request, res: Response): Promise<any> => {
   const { username, email, password, phoneNumber } = req.body;
@@ -32,7 +34,17 @@ router.post("/register", async (req: Request, res: Response): Promise<any> => {
 
     await newUser.save();
 
-    res.status(201).json({ message: "User registered succesfully" });
+    const token = jwt.sign({ userId: newUser._id }, JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    res
+      .status(201)
+      .json({
+        message: "User registered succesfully",
+        token,
+        user: { _id: newUser._id },
+      });
   } catch (error) {
     console.error("Registration failed:", error);
     res.status(500).json({ message: "Server error." });
@@ -55,14 +67,19 @@ router.post("/login", async (req: Request, res: Response): Promise<any> => {
         .json({ message: "Not Found account with given email" });
     }
 
-    const passwordMatch = bcrypt.compare(password, user.password);
+    const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (!passwordMatch) {
       return res.status(401).json({ message: "Wrong password." });
     }
 
+    const token = jwt.sign({ userId: user._id }, JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
     res.status(200).json({
       message: "Logged in Successfully",
+      token,
       user: {
         _id: user?._id,
       },
