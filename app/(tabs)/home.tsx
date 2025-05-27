@@ -4,7 +4,6 @@ import { useAuth } from "../../store/AuthContext";
 
 const HomeScreen = () => {
   const { userData, logout } = useAuth();
-  console.log(userData);
   return (
     <View>
       <Text>home</Text>

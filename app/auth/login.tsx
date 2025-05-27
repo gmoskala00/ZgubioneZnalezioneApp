@@ -3,12 +3,16 @@ import AuthContent from "../../components/Auth/AuthContent";
 import { LoginCredentials } from "../../models/auth";
 import { API_URL } from "../../constants/api";
 import { useAuth } from "../../store/AuthContext";
+import LoadingOverlay from "../../components/UI/LoadingOverlay";
+import { useState } from "react";
 
 const LoginScreen = () => {
   const { authenticate } = useAuth();
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const loginUser = async (credentials: LoginCredentials) => {
     try {
+      setIsAuthenticating(true);
       const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: {
@@ -30,8 +34,14 @@ const LoginScreen = () => {
       authenticate(data.user._id, data.token);
     } catch (error) {
       Alert.alert("Login Failed ", (error as Error).message);
+    } finally {
+      setIsAuthenticating(false);
     }
   };
+
+  if (isAuthenticating) {
+    return <LoadingOverlay message="Logging in..." />;
+  }
 
   return <AuthContent isLogin onAuthenticate={loginUser} />;
 };
