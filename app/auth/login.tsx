@@ -1,10 +1,10 @@
-import { Alert } from "react-native";
 import AuthContent from "../../components/Auth/AuthContent";
 import { LoginCredentials } from "../../models/auth";
 import { API_URL } from "../../constants/api";
 import { useAuth } from "../../store/AuthContext";
 import LoadingOverlay from "../../components/UI/LoadingOverlay";
 import { useState } from "react";
+import Toast from "react-native-toast-message";
 
 const LoginScreen = () => {
   const { authenticate } = useAuth();
@@ -32,8 +32,17 @@ const LoginScreen = () => {
       }
 
       authenticate(data.user._id, data.token);
+
+      Toast.show({
+        type: "success",
+        text1: "Zalogowano pomyślnie",
+      });
     } catch (error) {
-      Alert.alert("Login Failed ", (error as Error).message);
+      Toast.show({
+        type: "error",
+        text1: "Login Failed",
+        text2: (error as Error).message,
+      });
     } finally {
       setIsAuthenticating(false);
     }

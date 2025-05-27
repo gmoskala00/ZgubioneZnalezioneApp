@@ -1,11 +1,11 @@
 import { StyleSheet, View, Text } from "react-native";
-import { Alert } from "react-native";
 import { router } from "expo-router";
 
 import AuthForm from "./AuthForm";
 import Button from "../UI/Button";
 import { useState } from "react";
 import { AuthValidationState, AuthCredentials } from "../../models/auth";
+import Toast from "react-native-toast-message";
 
 type AuthContentProps = {
   isLogin: boolean;
@@ -41,8 +41,9 @@ const AuthContent = ({ isLogin, onAuthenticate }: AuthContentProps) => {
     phoneNumber = phoneNumber?.trim() || "";
 
     const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    const passwordIsValid = password.length >= 6 && /\d/.test(password);
-    const passwordsAreEqual = password === confirmPassword;
+    const passwordIsValid =
+      isLogin || (password.length >= 6 && /\d/.test(password));
+    const passwordsAreEqual = isLogin || password === confirmPassword;
     const usernameIsValid =
       isLogin || (username.length >= 3 && !/\s/.test(username));
     const phoneIsValid = !phoneNumber || /^\+?\d{9,15}$/.test(phoneNumber);
@@ -50,12 +51,16 @@ const AuthContent = ({ isLogin, onAuthenticate }: AuthContentProps) => {
     const formIsValid =
       emailIsValid &&
       passwordIsValid &&
-      (isLogin || passwordsAreEqual) &&
-      (isLogin || usernameIsValid) &&
+      passwordsAreEqual &&
+      usernameIsValid &&
       phoneIsValid;
 
     if (!formIsValid) {
-      Alert.alert("Invalid input", "Please check your entered credentials.");
+      Toast.show({
+        type: "error",
+        text1: "Invalid input",
+        text2: "Please check your entered credentials.",
+      });
 
       const invalid: AuthValidationState = {
         email: !emailIsValid,
