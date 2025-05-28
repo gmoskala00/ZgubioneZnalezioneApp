@@ -4,12 +4,17 @@ import { router } from "expo-router";
 import AuthForm from "./AuthForm";
 import Button from "../UI/Button";
 import { useState } from "react";
-import { AuthValidationState, AuthCredentials } from "../../models/auth";
+import {
+  AuthValidationState,
+  AuthCredentials,
+  LoginCredentials,
+} from "../../models/auth";
 import Toast from "react-native-toast-message";
+import { loginSchema, registerSchema } from "../../shared/schemas/authSchema";
 
 type AuthContentProps = {
   isLogin: boolean;
-  onAuthenticate: (credentials: AuthCredentials) => void;
+  onAuthenticate: (credentials: AuthCredentials | LoginCredentials) => void;
 };
 
 const AuthContent = ({ isLogin, onAuthenticate }: AuthContentProps) => {
@@ -30,51 +35,35 @@ const AuthContent = ({ isLogin, onAuthenticate }: AuthContentProps) => {
     }
   };
 
-  function submitHandler(credentials: AuthCredentials) {
-    let { username, email, password, confirmPassword, phoneNumber } =
-      credentials;
+  function submitHandler(credentials: AuthCredentials | LoginCredentials) {
+    const schema = isLogin ? loginSchema : registerSchema;
 
-    username = username.trim();
-    email = email.trim();
-    password = password.trim();
-    confirmPassword = confirmPassword.trim();
-    phoneNumber = phoneNumber?.trim() || "";
+    const result = schema.safeParse(credentials);
+    console.log(result);
 
-    const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    const passwordIsValid =
-      isLogin || (password.length >= 6 && /\d/.test(password));
-    const passwordsAreEqual = isLogin || password === confirmPassword;
-    const usernameIsValid =
-      isLogin || (username.length >= 3 && !/\s/.test(username));
-    const phoneIsValid = !phoneNumber || /^\+?\d{9,15}$/.test(phoneNumber);
+    if (!result.success) {
+      const fieldErrors = result.error.flatten()
+        .fieldErrors as Partial<AuthValidationState>;
 
-    const formIsValid =
-      emailIsValid &&
-      passwordIsValid &&
-      passwordsAreEqual &&
-      usernameIsValid &&
-      phoneIsValid;
+      const errorMap: AuthValidationState = {
+        username: !!fieldErrors.username,
+        email: !!fieldErrors.email,
+        password: !!fieldErrors.password,
+        confirmPassword: !!fieldErrors.confirmPassword,
+        phoneNumber: !!fieldErrors.phoneNumber,
+      };
 
-    if (!formIsValid) {
+      setCredentialsInvalid(errorMap);
+
       Toast.show({
         type: "error",
         text1: "Invalid input",
         text2: "Please check your entered credentials.",
       });
 
-      const invalid: AuthValidationState = {
-        email: !emailIsValid,
-        password: !passwordIsValid,
-        confirmPassword: isLogin
-          ? false
-          : !passwordsAreEqual || !passwordIsValid,
-        username: isLogin ? false : !usernameIsValid,
-        phoneNumber: !phoneIsValid,
-      };
-
-      setCredentialsInvalid(invalid);
       return;
     }
+
     setCredentialsInvalid({
       username: false,
       email: false,
@@ -83,7 +72,11 @@ const AuthContent = ({ isLogin, onAuthenticate }: AuthContentProps) => {
       phoneNumber: false,
     });
 
-    onAuthenticate({ username, email, password, confirmPassword, phoneNumber });
+    if (isLogin) {
+      onAuthenticate(result.data as LoginCredentials);
+    } else {
+      onAuthenticate(result.data as AuthCredentials);
+    }
   }
 
   return (

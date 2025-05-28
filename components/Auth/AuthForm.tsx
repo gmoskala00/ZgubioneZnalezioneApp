@@ -2,12 +2,16 @@ import { StyleSheet, View } from "react-native";
 import Button from "../UI/Button";
 import Input from "../UI/Input";
 import { useState } from "react";
-import { AuthCredentials, AuthValidationState } from "../../models/auth";
+import {
+  AuthCredentials,
+  AuthValidationState,
+  LoginCredentials,
+} from "../../models/auth";
 
 type AuthFormProps = {
   isLogin: boolean;
   credentialsInvalid: AuthValidationState;
-  onSubmit: (credentials: AuthCredentials) => void;
+  onSubmit: (credentials: AuthCredentials | LoginCredentials) => void;
 };
 
 const AuthForm = ({ isLogin, credentialsInvalid, onSubmit }: AuthFormProps) => {

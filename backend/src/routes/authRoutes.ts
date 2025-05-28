@@ -2,16 +2,28 @@ import { Router, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import User from "../models/User";
+import {
+  loginSchema,
+  registerSchema,
+} from "../../../shared/schemas/authSchema";
+import { json } from "stream/consumers";
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
 router.post("/register", async (req: Request, res: Response): Promise<any> => {
-  const { username, email, password, phoneNumber } = req.body;
+  const credentials = req.body;
 
-  if (!username || !email || !password) {
-    return res.status(400).json({ message: "Missing Required Fields" });
+  const result = registerSchema.safeParse(credentials);
+
+  if (!result.success) {
+    return res.status(400).json({
+      message: "Validation Error",
+      errors: result.error.flatten().fieldErrors,
+    });
   }
+
+  const { username, email, password, phoneNumber } = result.data;
 
   try {
     const existingEmail = await User.findOne({ email });
@@ -38,13 +50,11 @@ router.post("/register", async (req: Request, res: Response): Promise<any> => {
       expiresIn: "7d",
     });
 
-    res
-      .status(201)
-      .json({
-        message: "User registered succesfully",
-        token,
-        user: { _id: newUser._id },
-      });
+    res.status(201).json({
+      message: "User registered succesfully",
+      token,
+      user: { _id: newUser._id },
+    });
   } catch (error) {
     console.error("Registration failed:", error);
     res.status(500).json({ message: "Server error." });
@@ -52,11 +62,18 @@ router.post("/register", async (req: Request, res: Response): Promise<any> => {
 });
 
 router.post("/login", async (req: Request, res: Response): Promise<any> => {
-  const { email, password } = req.body;
+  const credentials = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ message: "Missing Required Fields" });
+  const result = loginSchema.safeParse(credentials);
+
+  if (!result.success) {
+    return res.status(400).json({
+      message: "Validation error",
+      errors: result.error.flatten().fieldErrors,
+    });
   }
+
+  const { email, password } = result.data;
 
   try {
     const user = await User.findOne({ email });
