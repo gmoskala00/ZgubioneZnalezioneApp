@@ -47,7 +47,7 @@ export default function RootLayout() {
           <Stack.Screen name="auth" />
           <Stack.Screen name="(tabs)" />
         </Stack>
-        <Toast config={toastConfig} />
+        <Toast config={toastConfig} topOffset={75} />
       </AuthContextProvider>
     </View>
   );

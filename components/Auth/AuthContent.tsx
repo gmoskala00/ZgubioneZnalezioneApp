@@ -39,7 +39,6 @@ const AuthContent = ({ isLogin, onAuthenticate }: AuthContentProps) => {
     const schema = isLogin ? loginSchema : registerSchema;
 
     const result = schema.safeParse(credentials);
-    console.log(result);
 
     if (!result.success) {
       const fieldErrors = result.error.flatten()
