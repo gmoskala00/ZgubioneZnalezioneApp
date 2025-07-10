@@ -6,7 +6,6 @@ import {
   loginSchema,
   registerSchema,
 } from "../../../shared/schemas/authSchema";
-import { json } from "stream/consumers";
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";

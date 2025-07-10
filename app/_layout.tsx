@@ -6,6 +6,7 @@ import * as Font from "expo-font";
 import { AuthContextProvider } from "../store/AuthContext";
 import Toast from "react-native-toast-message";
 import { toastConfig } from "../components/UI/toastConfig";
+import { GlobalStyles } from "../constants/style";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -43,7 +44,11 @@ export default function RootLayout() {
   return (
     <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <AuthContextProvider>
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
           <Stack.Screen name="auth" />
           <Stack.Screen name="(tabs)" />
         </Stack>

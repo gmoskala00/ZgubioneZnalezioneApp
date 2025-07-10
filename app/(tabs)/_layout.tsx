@@ -43,6 +43,9 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: GlobalStyles.colors.card,
         },
+        sceneStyle: {
+          backgroundColor: GlobalStyles.colors.background,
+        },
       }}
     >
       <Tabs.Screen
