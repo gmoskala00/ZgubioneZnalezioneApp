@@ -15,6 +15,7 @@ export interface IFoundItem extends Document {
   contactMethod: "email" | "phone" | "other";
   contactDetails: string;
   createdBy: Schema.Types.ObjectId;
+  status?: "active" | "expired" | "returned";
 }
 
 const foundItemSchema = new Schema<IFoundItem>(
@@ -61,6 +62,11 @@ const foundItemSchema = new Schema<IFoundItem>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
+    },
+    status: {
+      type: String,
+      enum: ["active", "expired", "returned"],
+      default: "active",
     },
   },
   { timestamps: true }

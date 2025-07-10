@@ -31,5 +31,7 @@ export const foundItemSchema = z.object({
 
   contactDetails: z.string().min(1, "Contact details are required"),
 
-  createdBy: z.string().min(1, "User ID is required"), // jeśli przesyłasz userId z tokena np.
+  createdBy: z.string().min(1, "User ID is required"),
+
+  status: z.enum(["active", "expired", "returned"]).optional(),
 });

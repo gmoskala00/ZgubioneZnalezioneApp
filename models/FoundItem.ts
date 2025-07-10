@@ -14,4 +14,5 @@ export type FoundItem = {
   contactMethod: "email" | "phone" | "other";
   contactDetails: string;
   createdBy: string;
+  status?: "active" | "expired" | "returned";
 };
