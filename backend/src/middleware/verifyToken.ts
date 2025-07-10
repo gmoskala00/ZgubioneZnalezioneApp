@@ -11,11 +11,12 @@ export const verifyToken = (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
-) => {
+): void => {
   const authHeader = (req.headers as Record<string, string>)["authorization"];
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized - no token" });
+    res.status(401).json({ message: "Unauthorized - no token" });
+    return;
   }
 
   const token = authHeader.split(" ")[1];
@@ -25,6 +26,7 @@ export const verifyToken = (
     req.user = { userId: decoded.userId };
     next();
   } catch (error) {
-    return res.status(401).json({ message: "Invalid or expired token" });
+    res.status(401).json({ message: "Invalid or expired token" });
+    return;
   }
 };
