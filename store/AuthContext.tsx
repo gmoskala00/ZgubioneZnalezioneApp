@@ -8,7 +8,8 @@ import {
 } from "react";
 import * as SecureStore from "expo-secure-store";
 import { UserData } from "../models/auth";
-import { API_URL } from "../constants/api";
+import { Api } from "../services/api";
+import { setAuthToken, setOnUnauthorized } from "../services/http";
 
 type AuthContextType = {
   userId: string;
@@ -24,9 +25,9 @@ export const AuthContext = createContext<AuthContextType>({
   userId: "",
   token: null,
   isAuthenticated: false,
-  authenticate: (userId: string, token: string) => {},
+  authenticate: () => {},
   userData: null,
-  setUserData: (data: UserData) => {},
+  setUserData: () => {},
   logout: () => {},
 });
 
@@ -35,6 +36,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
 
+  // 🔹 Ładowanie tokena po starcie aplikacji
   useEffect(() => {
     const loadToken = async () => {
       const storedToken = await SecureStore.getItemAsync("token");
@@ -42,6 +44,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
 
       if (storedToken && storedUserId) {
         setToken(storedToken);
+        setAuthToken(storedToken);
         setUserId(storedUserId);
         router.replace("/(tabs)/home");
       }
@@ -49,49 +52,64 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
     loadToken();
   }, []);
 
+  // 🔹 Globalne ustawienie tokena i handlera 401
+  useEffect(() => {
+    setAuthToken(token);
+    setOnUnauthorized(() => logout);
+    return () => setOnUnauthorized(null);
+  }, [token]);
+
+  // 🔹 Pobieranie danych użytkownika po zalogowaniu
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/users/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
+        const data = await Api.getMe();
         setUserData(data);
-      } catch (error) {
-        console.error("Falied to load user: ", (error as Error).message);
+      } catch (error: any) {
+        if (error?.message === "Unauthorized") {
+          await logout();
+        } else {
+          console.error("Failed to load user:", error?.message);
+        }
       }
     };
 
-    if (userId && token) {
-      fetchUser();
-    }
+    if (userId && token) fetchUser();
   }, [userId, token]);
 
+  // 🔹 Logowanie
   const authenticate = async (userId: string, token: string) => {
     setToken(token);
+    setAuthToken(token);
     setUserId(userId);
+
     await SecureStore.setItemAsync("token", token);
     await SecureStore.setItemAsync("userId", userId);
+
     router.replace("/(tabs)/home");
   };
 
+  // 🔹 Wylogowanie
   const logout = async () => {
     setUserData(null);
     setUserId("");
     setToken(null);
+    setAuthToken(null); // <— czyścimy globalny token
+
     await SecureStore.deleteItemAsync("token");
     await SecureStore.deleteItemAsync("userId");
+
     router.replace("/auth/login");
   };
 
   const value = {
-    userId: userId,
-    token: token,
+    userId,
+    token,
     isAuthenticated: !!token,
-    authenticate: authenticate,
-    userData: userData,
-    setUserData: setUserData,
-    logout: logout,
+    authenticate,
+    userData,
+    setUserData,
+    logout,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

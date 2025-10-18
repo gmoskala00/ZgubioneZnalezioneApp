@@ -12,10 +12,15 @@ import {
 import Toast from "react-native-toast-message";
 import { loginSchema, registerSchema } from "../../shared/schemas/authSchema";
 
-type AuthContentProps = {
-  isLogin: boolean;
-  onAuthenticate: (credentials: AuthCredentials | LoginCredentials) => void;
-};
+type AuthContentProps =
+  | {
+      isLogin: true;
+      onAuthenticate: (credentials: LoginCredentials) => void | Promise<void>;
+    }
+  | {
+      isLogin: false;
+      onAuthenticate: (credentials: AuthCredentials) => void | Promise<void>;
+    };
 
 const AuthContent = ({ isLogin, onAuthenticate }: AuthContentProps) => {
   const [credentialsInvalid, setCredentialsInvalid] =

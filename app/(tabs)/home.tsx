@@ -1,25 +1,24 @@
 import { StyleSheet, Text, View, Image } from "react-native";
-import Button from "../../components/UI/Button";
 import { useAuth } from "../../store/AuthContext";
 import { GlobalStyles } from "../../constants/style";
 import ActionTile from "../../components/UI/ActionTile";
 import { router } from "expo-router";
 
 const HomeScreen = () => {
-  const { userData, logout } = useAuth();
+  const { userData } = useAuth();
 
   const mapClickHandle = () => {
-    router.push("/map");
+    router.push("/(tabs)/map");
   };
 
   const addClickHandle = () => {
-    router.push("/add-item");
+    router.push("/(tabs)/add-item");
   };
 
   return (
     <View style={styles.outerContainer}>
       <View style={styles.textContainer}>
-        <Text style={styles.text}>Welcome {userData?.username}!</Text>
+        <Text style={styles.text}>Witaj {userData?.username}!</Text>
       </View>
       <View style={styles.imageContainer}>
         <Image
@@ -29,12 +28,12 @@ const HomeScreen = () => {
       </View>
       <View style={styles.buttonsContainer}>
         <ActionTile
-          text="Map"
+          text="Mapa"
           iconName="map-outline"
           onPress={mapClickHandle}
         />
         <ActionTile
-          text="Add"
+          text="Dodaj"
           iconName="add-outline"
           onPress={addClickHandle}
         />

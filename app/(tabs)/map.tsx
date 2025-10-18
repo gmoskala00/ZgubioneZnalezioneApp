@@ -7,8 +7,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-
-const BACKEND_URL = "http://10.0.2.2:5000/api/found-items";
+import { Api } from "../../services/api";
 
 const MapScreen = () => {
   const [items, setItems] = useState<any[]>([]);
@@ -17,11 +16,10 @@ const MapScreen = () => {
   const fetchItems = async () => {
     setLoading(true);
     try {
-      const res = await fetch(BACKEND_URL);
-      const data = await res.json();
+      const data = await Api.listFoundItems();
       setItems(data);
-    } catch (err) {
-      console.error("Błąd pobierania:", err);
+    } catch (err: any) {
+      console.error("Błąd pobierania:", err?.message || err);
     } finally {
       setLoading(false);
     }
@@ -48,10 +46,15 @@ const MapScreen = () => {
               <Text style={styles.itemTitle}>{item.title}</Text>
               <Text>{item.description}</Text>
               <Text style={styles.date}>
-                {new Date(item.dateFound).toLocaleDateString()}
+                {new Date(item.dateFound).toLocaleDateString("pl-PL", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                })}
               </Text>
             </View>
           )}
+          contentContainerStyle={{ paddingBottom: 24 }}
         />
       )}
     </View>
