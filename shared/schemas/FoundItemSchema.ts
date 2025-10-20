@@ -11,7 +11,7 @@ export const foundItemSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
 
-  dateFound: z.string().refine((v) => !isNaN(Date.parse(v)), {
+  dateFound: z.string().refine((v: string) => !isNaN(Date.parse(v)), {
     message: "Invalid date format",
   }),
 
@@ -23,17 +23,13 @@ export const foundItemSchema = z.object({
 
   securityQuestions: z
     .tuple([z.string().min(3), z.string().min(3)])
-    .refine(([a, b]) => a.trim() !== b.trim(), {
+    .refine(([a, b]: [string, string]) => a.trim() !== b.trim(), {
       message: "Questions must be different",
       path: [1],
     }),
 
-  contactMethod: z.enum(["email", "phone", "other"], {
-    required_error: "Contact method is required",
-  }),
+  contactMethod: z.enum(["email", "phone", "other"]),
   contactDetails: z.string().min(1, "Contact details are required"),
-
   createdBy: z.string().min(1, "User ID is required"),
-
   status: z.enum(["active", "expired", "returned"]).optional(),
 });

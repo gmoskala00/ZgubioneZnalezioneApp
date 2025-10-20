@@ -7,22 +7,16 @@ export const loginSchema = z.object({
 
 export const registerSchema = loginSchema
   .extend({
-    username: z
-      .string()
-      .min(3, "Username must be at least 3 letter")
-      .regex(/^\S+$/, "Username cannot contain spaces"),
-    password: z
-      .string()
-      .min(6, "Password must be at least 6 characters")
-      .regex(/\d/, "Password must contain at least one number"),
+    username: z.string().min(3).regex(/^\S+$/),
+    password: z.string().min(6).regex(/\d/),
     confirmPassword: z.string(),
     phoneNumber: z
       .string()
-      .regex(/^\+?\d{9,15}$/, "Invalid phone number")
+      .regex(/^\+?\d{9,15}$/)
       .optional()
       .or(z.literal("")),
   })
-  .refine((data) => data.password === data.confirmPassword, {
+  .refine((data: any) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
   });

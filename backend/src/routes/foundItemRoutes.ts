@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import FoundItem from "../models/FoundItem";
-import { foundItemSchema } from "../../../shared/schemas/foundItemSchema";
+import { foundItemSchema } from "../../../shared/schemas/FoundItemSchema";
 import { verifyToken, AuthenticatedRequest } from "../middleware/verifyToken";
 
 const router = Router();
