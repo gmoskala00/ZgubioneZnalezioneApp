@@ -1,5 +1,5 @@
 import { Schema, model, Document } from "mongoose";
-import { FOUND_ITEM_CATEGORIES } from "../../../shared/constants/categories";
+import { FOUND_ITEM_CATEGORIES } from "../../../shared/dist/constants/categories"; // 👈 DIST
 
 export interface IFoundItem extends Document {
   title: string;

@@ -31,5 +31,6 @@ export const foundItemSchema = z.object({
   contactMethod: z.enum(["email", "phone", "other"]),
   contactDetails: z.string().min(1, "Contact details are required"),
   createdBy: z.string().min(1, "User ID is required"),
+
   status: z.enum(["active", "expired", "returned"]).optional(),
 });

@@ -10,7 +10,10 @@ import {
   LoginCredentials,
 } from "../../models/auth";
 import Toast from "react-native-toast-message";
-import { loginSchema, registerSchema } from "../../shared/schemas/authSchema";
+import {
+  loginSchema,
+  registerSchema,
+} from "../../shared/src/schemas/authSchema";
 
 type AuthContentProps =
   | {

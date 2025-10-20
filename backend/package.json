@@ -4,9 +4,10 @@
   "type": "commonjs",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "prebuild": "cd ../shared && npm ci && npm run build",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts"
   },
   "engines": {
     "node": ">=18"
@@ -18,8 +19,7 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.16.0",
-    "mongoose": "^8.18.0",
-    "zod": "^4.1.12"
+    "mongoose": "^8.18.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

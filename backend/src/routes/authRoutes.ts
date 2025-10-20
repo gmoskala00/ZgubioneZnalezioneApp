@@ -5,7 +5,7 @@ import User from "../models/User";
 import {
   loginSchema,
   registerSchema,
-} from "../../../shared/schemas/authSchema";
+} from "../../../shared/dist/schemas/authSchema";
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
