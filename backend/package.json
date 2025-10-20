@@ -6,7 +6,7 @@
   "scripts": {
     "prebuild": "cd ../shared && npm ci && npm run build",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts"
   },
   "engines": {
