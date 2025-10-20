@@ -1,24 +1,12 @@
 import { Schema, model, Document } from "mongoose";
-
-const categoryEnum = [
-  "keys",
-  "wallet",
-  "phone",
-  "electronics",
-  "documents",
-  "clothing",
-  "jewelry",
-  "bag",
-  "pet",
-  "other",
-] as const;
+import { FOUND_ITEM_CATEGORIES } from "../../../shared/constants/categories";
 
 export interface IFoundItem extends Document {
   title: string;
   description: string;
   dateFound: Date;
   foundLocation: { lat: number; lng: number; description: string };
-  categories: (typeof categoryEnum)[number][];
+  categories: (typeof FOUND_ITEM_CATEGORIES)[number][];
   securityQuestions: [string, string];
   contactMethod: "email" | "phone" | "other";
   contactDetails: string;
@@ -37,8 +25,7 @@ const foundItemSchema = new Schema<IFoundItem>(
       description: { type: String, required: true },
     },
     categories: {
-      type: [String],
-      enum: categoryEnum,
+      type: [{ type: String, enum: FOUND_ITEM_CATEGORIES }],
       required: true,
       validate: [(v: string[]) => v.length > 0, "At least one category"],
     },
