@@ -4,13 +4,11 @@
   "type": "commonjs",
   "main": "dist/server.js",
   "scripts": {
+    "clean": "rimraf dist",
     "prebuild": "cd ../shared && npm ci && npm run build",
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/src/server.js",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts"
-  },
-  "engines": {
-    "node": ">=18"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
