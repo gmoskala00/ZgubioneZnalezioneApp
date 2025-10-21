@@ -50,4 +50,6 @@ const foundItemSchema = new Schema<IFoundItem>(
   { timestamps: true }
 );
 
+foundItemSchema.index({ "foundLocation.lat": 1, "foundLocation.lng": 1 });
+
 export default model<IFoundItem>("FoundItem", foundItemSchema);

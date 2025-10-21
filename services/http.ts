@@ -1,4 +1,3 @@
-// services/http.ts
 import { API_URL } from "../constants/api";
 
 let authToken: string | null = null;
@@ -32,7 +31,16 @@ export async function authorizedFetch(path: string, init: RequestInit = {}) {
   return res;
 }
 
-export async function asJson<T = any>(res: Response): Promise<T> {
+export async function asJson<T>(res: Response): Promise<T> {
   const text = await res.text();
-  return text ? (JSON.parse(text) as T) : ({} as T);
+  let data: any = null;
+  try {
+    data = JSON.parse(text);
+  } catch {}
+
+  if (!res.ok) {
+    const msg = data?.message || text.slice(0, 160) || "Request failed";
+    throw new Error(msg);
+  }
+  return data as T;
 }

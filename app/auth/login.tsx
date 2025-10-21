@@ -13,6 +13,9 @@ const LoginScreen = () => {
   const loginUser = async (credentials: LoginCredentials) => {
     try {
       setIsAuthenticating(true);
+
+      console.log("📡 API_URL =", API_URL);
+
       const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: {
@@ -21,13 +24,20 @@ const LoginScreen = () => {
         body: JSON.stringify(credentials),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Login Failed");
+      const raw = await response.text();
+      let data: any = null;
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        console.warn("⚠️ Server did not return JSON:", raw.slice(0, 120));
       }
 
-      if (!data.user || !data.user._id) {
+      if (!response.ok) {
+        const msg = data?.message || raw.slice(0, 100) || "Login failed";
+        throw new Error(msg);
+      }
+
+      if (!data?.user?._id) {
         throw new Error("Invalid response from server.");
       }
 

@@ -32,4 +32,45 @@ router.post(
   }
 );
 
+router.get("/", async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const items = await FoundItem.find({}).sort({ createdAt: -1 }).limit(200);
+    res.json(items);
+  } catch (err) {
+    console.error("List error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.get("/bbox", async (req: Request, res: Response): Promise<void> => {
+  const n = Number(req.query.n);
+  const e = Number(req.query.e);
+  const s = Number(req.query.s);
+  const w = Number(req.query.w);
+  const limit = Math.min(Number(req.query.limit ?? 300), 500);
+
+  if ([n, e, s, w].some(Number.isNaN)) {
+    res.status(400).json({ message: "bbox params required: n,e,s,w" });
+    return;
+  }
+
+  try {
+    const items = await FoundItem.find({
+      "foundLocation.lat": { $gte: s, $lte: n },
+      "foundLocation.lng": { $gte: w, $lte: e },
+      status: { $ne: "expired" },
+    })
+      .select(
+        "_id title description dateFound foundLocation categories createdAt"
+      )
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    res.json({ items });
+  } catch (err) {
+    console.error("BBox error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 export default router;

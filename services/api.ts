@@ -20,6 +20,16 @@ export const Api = {
   getMe: () => Api.get<UserData>("/api/users/me"),
 
   listFoundItems: () => Api.get<FoundItem[]>("/api/found-items"),
+  listFoundItemsBBox: (
+    n: number,
+    e: number,
+    s: number,
+    w: number,
+    limit = 300
+  ) =>
+    Api.get<{ items: FoundItem[] }>(
+      `/api/found-items/bbox?n=${n}&e=${e}&s=${s}&w=${w}&limit=${limit}`
+    ),
   createFoundItem: (payload: any) =>
     Api.post<FoundItem>("/api/found-items", payload),
   updateFoundItem: (id: string, payload: any) =>

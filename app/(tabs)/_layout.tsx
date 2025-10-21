@@ -29,13 +29,13 @@ export default function TabsLayout() {
             >
               <Ionicons
                 name="log-out-outline"
-                size={24}
+                size={28}
                 color={GlobalStyles.colors.textPrimary}
               />
             </TouchableOpacity>
           ),
         headerTitleStyle: {
-          fontSize: 20,
+          fontSize: 24,
           fontWeight: "bold",
           fontFamily: "Nunito-Bold",
           color: GlobalStyles.colors.textPrimary,
