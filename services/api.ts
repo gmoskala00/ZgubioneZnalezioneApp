@@ -27,7 +27,7 @@ export const Api = {
     w: number,
     limit = 300
   ) =>
-    Api.get<{ items: FoundItem[] }>(
+    Api.get<{ items: any[] }>(
       `/api/found-items/bbox?n=${n}&e=${e}&s=${s}&w=${w}&limit=${limit}`
     ),
   createFoundItem: (payload: any) =>

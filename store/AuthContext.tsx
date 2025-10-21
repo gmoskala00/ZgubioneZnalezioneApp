@@ -1,4 +1,3 @@
-import { router } from "expo-router";
 import {
   createContext,
   ReactNode,
@@ -10,99 +9,94 @@ import * as SecureStore from "expo-secure-store";
 import { UserData } from "../models/auth";
 import { Api } from "../services/api";
 import { setAuthToken, setOnUnauthorized } from "../services/http";
+import { router } from "expo-router";
+import LoadingOverlay from "../components/UI/LoadingOverlay";
 
 type AuthContextType = {
   userId: string;
   token: string | null;
   isAuthenticated: boolean;
-  authenticate: (userId: string, token: string) => void;
+  authenticate: (userId: string, token: string) => Promise<void>;
   userData: UserData | null;
-  setUserData: (data: UserData) => void;
-  logout: () => void;
+  setUserData: (data: UserData | null) => void;
+  logout: () => Promise<void>;
+  isHydrating: boolean;
 };
 
 export const AuthContext = createContext<AuthContextType>({
   userId: "",
   token: null,
   isAuthenticated: false,
-  authenticate: () => {},
+  authenticate: async () => {},
   userData: null,
   setUserData: () => {},
-  logout: () => {},
+  logout: async () => {},
+  isHydrating: true,
 });
 
 export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   const [userId, setUserId] = useState("");
   const [token, setToken] = useState<string | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [isHydrating, setIsHydrating] = useState(true);
 
-  // 🔹 Ładowanie tokena po starcie aplikacji
   useEffect(() => {
-    const loadToken = async () => {
-      const storedToken = await SecureStore.getItemAsync("token");
-      const storedUserId = await SecureStore.getItemAsync("userId");
-
-      if (storedToken && storedUserId) {
-        setToken(storedToken);
-        setAuthToken(storedToken);
-        setUserId(storedUserId);
-        router.replace("/(tabs)/home");
+    (async () => {
+      try {
+        const [storedToken, storedUserId] = await Promise.all([
+          SecureStore.getItemAsync("token"),
+          SecureStore.getItemAsync("userId"),
+        ]);
+        if (storedToken && storedUserId) {
+          setToken(storedToken);
+          setAuthToken(storedToken);
+          setUserId(storedUserId);
+        }
+      } finally {
+        setIsHydrating(false);
       }
-    };
-    loadToken();
+    })();
   }, []);
 
-  // 🔹 Globalne ustawienie tokena i handlera 401
   useEffect(() => {
-    setAuthToken(token);
+    if (isHydrating) return;
     setOnUnauthorized(() => logout);
     return () => setOnUnauthorized(null);
-  }, [token]);
+  }, [isHydrating]);
 
-  // 🔹 Pobieranie danych użytkownika po zalogowaniu
   useEffect(() => {
-    const fetchUser = async () => {
+    (async () => {
+      if (!token || !userId) return;
       try {
         const data = await Api.getMe();
         setUserData(data);
-      } catch (error: any) {
-        if (error?.message === "Unauthorized") {
-          await logout();
-        } else {
-          console.error("Failed to load user:", error?.message);
-        }
+        router.replace("/(tabs)/home");
+      } catch (e: any) {
+        console.warn("getMe failed:", e?.message || e);
+        await logout();
       }
-    };
+    })();
+  }, [token, userId]);
 
-    if (userId && token) fetchUser();
-  }, [userId, token]);
-
-  // 🔹 Logowanie
-  const authenticate = async (userId: string, token: string) => {
-    setToken(token);
-    setAuthToken(token);
-    setUserId(userId);
-
-    await SecureStore.setItemAsync("token", token);
-    await SecureStore.setItemAsync("userId", userId);
-
-    router.replace("/(tabs)/home");
+  const authenticate = async (uid: string, t: string) => {
+    setToken(t);
+    setAuthToken(t);
+    setUserId(uid);
+    await SecureStore.setItemAsync("token", t);
+    await SecureStore.setItemAsync("userId", uid);
   };
 
-  // 🔹 Wylogowanie
   const logout = async () => {
     setUserData(null);
     setUserId("");
     setToken(null);
-    setAuthToken(null); // <— czyścimy globalny token
-
+    setAuthToken(null);
     await SecureStore.deleteItemAsync("token");
     await SecureStore.deleteItemAsync("userId");
-
     router.replace("/auth/login");
   };
 
-  const value = {
+  const value: AuthContextType = {
     userId,
     token,
     isAuthenticated: !!token,
@@ -110,13 +104,16 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
     userData,
     setUserData,
     logout,
+    isHydrating,
   };
+
+  if (isHydrating) return <LoadingOverlay message="Uruchamianie..." />;
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error("AuthContext not found!");
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("AuthContext not found!");
+  return ctx;
 }
