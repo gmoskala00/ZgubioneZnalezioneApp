@@ -22,6 +22,8 @@ type Props = {
   idleMs?: number;
   epsilonCenterDeg?: number;
   epsilonDeltaDeg?: number;
+  refreshToken?: string | number;
+  onLoadingChange?: (loading: boolean) => void;
 };
 
 export default function MapWithPins({
@@ -30,6 +32,8 @@ export default function MapWithPins({
   idleMs = 350,
   epsilonCenterDeg = 0.0002,
   epsilonDeltaDeg = 0.0002,
+  refreshToken,
+  onLoadingChange,
 }: Props) {
   const [ready, setReady] = useState(false);
   const [items, setItems] = useState<MapItem[]>([]);
@@ -85,8 +89,8 @@ export default function MapWithPins({
     );
   };
 
-  const doFetch = async (r: Region) => {
-    if (nearlyEqual(r, lastFetchedRef.current)) return;
+  const doFetch = async (r: Region, showLoading: boolean, force = false) => {
+    if (!force && nearlyEqual(r, lastFetchedRef.current)) return;
 
     const latDelta = Math.max(r.latitudeDelta, 0.0005);
     const lngDelta = Math.max(r.longitudeDelta, 0.0005);
@@ -98,6 +102,7 @@ export default function MapWithPins({
 
     const reqId = ++latestReqId.current;
     try {
+      if (showLoading) onLoadingChange?.(true);
       const data = await fetchByBBox(n, e, s, w);
       if (reqId === latestReqId.current) {
         setItems(data);
@@ -105,17 +110,30 @@ export default function MapWithPins({
       }
     } catch (e: any) {
       console.error("BBOX fetch error:", e?.message || e);
+    } finally {
+      if (showLoading) onLoadingChange?.(false);
     }
   };
 
   useEffect(() => {
     if (!ready || !regionRef.current) return;
-    doFetch(regionRef.current);
+    doFetch(regionRef.current, true, true);
   }, [ready]);
+
+  useEffect(() => {
+    if (!ready || !regionRef.current) return;
+    if (refreshToken === undefined) return;
+    doFetch(regionRef.current, true, true);
+  }, [refreshToken]);
+
+  useEffect(() => {
+    if (!ready || !regionRef.current) return;
+    doFetch(regionRef.current, true, true);
+  }, [fetchByBBox]);
 
   const scheduleIdleFetch = (r: Region) => {
     if (idleTimer.current) clearTimeout(idleTimer.current);
-    idleTimer.current = setTimeout(() => doFetch(r), idleMs);
+    idleTimer.current = setTimeout(() => doFetch(r, false, false), idleMs);
   };
 
   const onRegionChange = (r: Region) => {
@@ -129,7 +147,7 @@ export default function MapWithPins({
       clearTimeout(idleTimer.current);
       idleTimer.current = null;
     }
-    doFetch(r);
+    doFetch(r, false, false);
   };
 
   if (!ready || !regionRef.current) {

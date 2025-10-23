@@ -5,8 +5,12 @@ import { verifyToken, AuthenticatedRequest } from "../middleware/verifyToken";
 
 const router = Router();
 
-function escapeRegex(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function fold(s: string) {
+  return s
+    ?.normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .trim();
 }
 
 router.post(
@@ -78,7 +82,15 @@ router.get("/bbox", async (req: Request, res: Response): Promise<void> => {
   }
 
   if (q) {
-    filter.title = { $regex: escapeRegex(q), $options: "i" };
+    const tokens = fold(q).split(/\s+/).filter(Boolean);
+    filter.$and = (filter.$and ?? []).concat(
+      tokens.map((t) => ({
+        titleFolded: {
+          $regex: t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          $options: "i",
+        },
+      }))
+    );
   }
 
   try {

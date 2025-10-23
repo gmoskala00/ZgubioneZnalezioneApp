@@ -6,6 +6,7 @@ import {
   Pressable,
   Text,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import MapWithPins, { MapItem } from "../../components/UI/MapWithPins";
 import { Api } from "../../services/api";
@@ -14,46 +15,63 @@ import { foundItemCategories } from "../../models/FoundItem";
 import { CATEGORY_LABELS } from "../../i18n/labels";
 import { GlobalStyles } from "../../constants/style";
 
-async function rawFetchByBBox(
-  n: number,
-  e: number,
-  s: number,
-  w: number
-): Promise<MapItem[]> {
-  const res = await Api.listFoundItemsBBox(n, e, s, w);
-  return res.items as MapItem[];
-}
-
 export default function MapScreen() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState(query);
+
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [activeCats, setActiveCats] = useState<string[]>([]);
+
+  const [catsDraft, setCatsDraft] = useState<string[]>([]);
+  const [catsApplied, setCatsApplied] = useState<string[]>([]);
+
+  const [refreshToken, setRefreshToken] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setDebouncedQuery(query.trim());
-    }, 400);
+    const t = setTimeout(() => setDebouncedQuery(query.trim()), 400);
     return () => clearTimeout(t);
   }, [query]);
 
-  const toggleCat = (c: string) => {
-    setActiveCats((prev) =>
+  const toggleFilters = () => {
+    if (filtersOpen) {
+      setFiltersOpen(false);
+    } else {
+      setCatsDraft(catsApplied);
+      setFiltersOpen(true);
+    }
+  };
+
+  const toggleDraftCat = (c: string) => {
+    setCatsDraft((prev) =>
       prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]
     );
   };
 
-  const activeCount = (query.trim() ? 1 : 0) + (activeCats.length ? 1 : 0);
+  const activeCount = (debouncedQuery ? 1 : 0) + (catsApplied.length ? 1 : 0);
 
   const fetchByBBox = useMemo(() => {
     return async (n: number, e: number, s: number, w: number) => {
-      const res = await Api.listFoundItemsBBox(n, e, s, w, 300, {
-        q: debouncedQuery,
-        categories: activeCats,
-      });
+      const opts: { q?: string; categories?: string[] } = {};
+      if (debouncedQuery) opts.q = debouncedQuery;
+      if (catsApplied.length > 0) opts.categories = catsApplied;
+
+      const res = await Api.listFoundItemsBBox(n, e, s, w, 300, opts);
       return res.items as MapItem[];
     };
-  }, [debouncedQuery, activeCats]);
+  }, [debouncedQuery, catsApplied]);
+
+  const applyCategories = () => {
+    setCatsApplied(catsDraft);
+    setFiltersOpen(false);
+    setRefreshToken((x) => x + 1);
+  };
+
+  const clearAndApply = () => {
+    setCatsDraft([]);
+    setCatsApplied([]);
+    setFiltersOpen(false);
+    setRefreshToken((x) => x + 1);
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -90,7 +108,7 @@ export default function MapScreen() {
 
         <Pressable
           style={({ pressed }) => [styles.filterBtn, pressed && styles.pressed]}
-          onPress={() => setFiltersOpen((v) => !v)}
+          onPress={toggleFilters}
         >
           <Ionicons name="funnel-outline" size={18} color="#fff" />
           <Text style={styles.filterBtnText}>Filtruj</Text>
@@ -105,13 +123,14 @@ export default function MapScreen() {
       {filtersOpen && (
         <View style={styles.popup}>
           <Text style={styles.popupTitle}>Kategorie</Text>
+
           <View style={styles.chipsWrap}>
             {foundItemCategories.map((c) => {
-              const active = activeCats.includes(c);
+              const active = catsDraft.includes(c);
               return (
                 <Pressable
                   key={c}
-                  onPress={() => toggleCat(c)}
+                  onPress={() => toggleDraftCat(c)}
                   style={[styles.chip, active && styles.chipActive]}
                 >
                   <Text
@@ -126,24 +145,46 @@ export default function MapScreen() {
 
           <View style={styles.popupFooter}>
             <Pressable
-              onPress={() => setActiveCats([])}
+              onPress={() => setFiltersOpen(false)}
+              style={[
+                styles.footerBtn,
+                styles.footerBtnGhost,
+                { marginRight: "auto" },
+              ]}
+            >
+              <Text style={[styles.footerBtnText, styles.footerBtnGhostText]}>
+                Anuluj
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={clearAndApply}
               style={[styles.footerBtn, styles.footerBtnGhost]}
             >
               <Text style={[styles.footerBtnText, styles.footerBtnGhostText]}>
                 Wyczyść
               </Text>
             </Pressable>
-            <Pressable
-              onPress={() => setFiltersOpen(false)}
-              style={styles.footerBtn}
-            >
-              <Text style={styles.footerBtnText}>Zamknij</Text>
+
+            <Pressable onPress={applyCategories} style={styles.footerBtn}>
+              <Text style={styles.footerBtnText}>Wybierz</Text>
             </Pressable>
           </View>
         </View>
       )}
 
-      <MapWithPins fetchByBBox={fetchByBBox} idleMs={400} />
+      <MapWithPins
+        fetchByBBox={fetchByBBox}
+        idleMs={400}
+        refreshToken={refreshToken}
+        onLoadingChange={setLoading}
+      />
+
+      {loading && (
+        <View style={styles.loadingDot}>
+          <ActivityIndicator size="small" />
+        </View>
+      )}
     </View>
   );
 }
@@ -151,7 +192,7 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   topBar: {
     position: "absolute",
-    top: Platform.select({ ios: 52, android: 24, default: 24 }),
+    top: Platform.select({ ios: 24, android: 24, default: 24 }),
     left: 12,
     right: 12,
     zIndex: 20,
@@ -168,11 +209,7 @@ const styles = StyleSheet.create({
     borderColor: GlobalStyles.colors.border,
     height: 44,
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    paddingVertical: 10,
-  },
+  searchInput: { flex: 1, fontSize: 16, paddingVertical: 10 },
   filterBtn: {
     height: 44,
     paddingHorizontal: 12,
@@ -200,9 +237,10 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: GlobalStyles.colors.primary,
   },
+
   popup: {
     position: "absolute",
-    top: Platform.select({ ios: 104, android: 72, default: 72 }),
+    top: Platform.select({ ios: 72, android: 72, default: 72 }),
     left: 12,
     right: 12,
     padding: 12,
@@ -210,7 +248,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: GlobalStyles.colors.border,
-    zIndex: 19,
+    zIndex: 21, // nad backdropem
     elevation: 6,
     shadowColor: "#000",
     shadowOpacity: 0.1,
@@ -220,6 +258,7 @@ const styles = StyleSheet.create({
   },
   popupTitle: { fontSize: 16, fontWeight: "700" },
   chipsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+
   chip: {
     borderWidth: 1,
     borderColor: "#bbb",
@@ -233,9 +272,10 @@ const styles = StyleSheet.create({
   },
   chipText: { color: "#333" },
   chipTextActive: { color: "#fff", fontWeight: "600" },
+
   popupFooter: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    alignItems: "center",
     gap: 8,
     marginTop: 6,
   },
@@ -252,4 +292,15 @@ const styles = StyleSheet.create({
     borderColor: GlobalStyles.colors.border,
   },
   footerBtnGhostText: { color: GlobalStyles.colors.textPrimary },
+
+  loadingDot: {
+    position: "absolute",
+    top: Platform.select({ ios: 75, android: 75, default: 75 }),
+    right: 10,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    zIndex: 30,
+  },
 });

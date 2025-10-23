@@ -3,6 +3,7 @@ import { FOUND_ITEM_CATEGORIES } from "../../../shared/dist/constants/categories
 
 export interface IFoundItem extends Document {
   title: string;
+  titleFolded: string;
   description: string;
   dateFound: Date;
   foundLocation: { lat: number; lng: number; description: string };
@@ -17,6 +18,7 @@ export interface IFoundItem extends Document {
 const foundItemSchema = new Schema<IFoundItem>(
   {
     title: { type: String, required: true, trim: true },
+    titleFolded: { type: String, index: true },
     description: { type: String, required: true },
     dateFound: { type: Date, required: true, default: Date.now },
     foundLocation: {
@@ -50,11 +52,24 @@ const foundItemSchema = new Schema<IFoundItem>(
   { timestamps: true }
 );
 
+function fold(s: string) {
+  return s
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .trim();
+}
+
 foundItemSchema.index({
   "foundLocation.lat": 1,
   "foundLocation.lng": 1,
   createdAt: -1,
 });
 foundItemSchema.index({ categories: 1, createdAt: -1 });
+
+foundItemSchema.pre("save", function (next) {
+  if (this.title) this.titleFolded = fold(this.title);
+  next();
+});
 
 export default model<IFoundItem>("FoundItem", foundItemSchema);

@@ -35,10 +35,13 @@ export const Api = {
       w: String(w),
       limit: String(limit),
     });
-    if (opts?.q && opts.q.trim()) params.set("q", opts.q.trim());
-    if (opts?.categories && opts.categories.length > 0) {
-      params.set("categories", opts.categories.join(","));
-    }
+
+    const q = opts?.q?.trim();
+    if (q) params.set("q", q);
+
+    const cats = opts?.categories?.filter(Boolean) ?? [];
+    if (cats.length > 0) params.set("categories", cats.join(","));
+
     return Api.get<{ items: any[] }>(
       `/api/found-items/bbox?${params.toString()}`
     );
