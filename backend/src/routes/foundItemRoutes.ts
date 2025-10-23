@@ -5,6 +5,10 @@ import { verifyToken, AuthenticatedRequest } from "../middleware/verifyToken";
 
 const router = Router();
 
+function escapeRegex(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 router.post(
   "/",
   verifyToken,
@@ -49,17 +53,36 @@ router.get("/bbox", async (req: Request, res: Response): Promise<void> => {
   const w = Number(req.query.w);
   const limit = Math.min(Number(req.query.limit ?? 300), 500);
 
+  const q = (req.query.q as string | undefined)?.trim();
+  const catsCsv = (req.query.categories as string | undefined)?.trim();
+  const categories = catsCsv
+    ? catsCsv
+        .split(",")
+        .map((x) => x.trim())
+        .filter(Boolean)
+    : [];
+
   if ([n, e, s, w].some(Number.isNaN)) {
     res.status(400).json({ message: "bbox params required: n,e,s,w" });
     return;
   }
 
+  const filter: any = {
+    "foundLocation.lat": { $gte: s, $lte: n },
+    "foundLocation.lng": { $gte: w, $lte: e },
+    status: { $ne: "expired" },
+  };
+
+  if (categories.length > 0) {
+    filter.categories = { $in: categories };
+  }
+
+  if (q) {
+    filter.title = { $regex: escapeRegex(q), $options: "i" };
+  }
+
   try {
-    const items = await FoundItem.find({
-      "foundLocation.lat": { $gte: s, $lte: n },
-      "foundLocation.lng": { $gte: w, $lte: e },
-      status: { $ne: "expired" },
-    })
+    const items = await FoundItem.find(filter)
       .select(
         "_id title description dateFound foundLocation categories createdAt"
       )

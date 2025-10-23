@@ -180,6 +180,9 @@ export default function LocationPicker({
             : `Lat: ${marker.lat.toFixed(6)} | Lng: ${marker.lng.toFixed(6)}`}
         </Text>
       )}
+      <Text style={{ fontSize: 10, color: "#666", marginTop: 4 }}>
+        © OpenStreetMap contributors
+      </Text>
     </View>
   );
 }

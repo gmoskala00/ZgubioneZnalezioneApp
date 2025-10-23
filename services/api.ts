@@ -25,11 +25,24 @@ export const Api = {
     e: number,
     s: number,
     w: number,
-    limit = 300
-  ) =>
-    Api.get<{ items: any[] }>(
-      `/api/found-items/bbox?n=${n}&e=${e}&s=${s}&w=${w}&limit=${limit}`
-    ),
+    limit = 300,
+    opts?: { q?: string; categories?: string[] }
+  ) => {
+    const params = new URLSearchParams({
+      n: String(n),
+      e: String(e),
+      s: String(s),
+      w: String(w),
+      limit: String(limit),
+    });
+    if (opts?.q && opts.q.trim()) params.set("q", opts.q.trim());
+    if (opts?.categories && opts.categories.length > 0) {
+      params.set("categories", opts.categories.join(","));
+    }
+    return Api.get<{ items: any[] }>(
+      `/api/found-items/bbox?${params.toString()}`
+    );
+  },
   createFoundItem: (payload: any) =>
     Api.post<FoundItem>("/api/found-items", payload),
   updateFoundItem: (id: string, payload: any) =>

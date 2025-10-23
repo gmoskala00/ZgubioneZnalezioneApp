@@ -8,6 +8,7 @@ export type MapItem = {
   title: string;
   description?: string;
   foundLocation: { lat: number; lng: number; description?: string };
+  categories?: string[];
 };
 
 type Props = {

@@ -3,9 +3,10 @@ import { router } from "expo-router";
 
 export default function AppEntry() {
   useEffect(() => {
-    const timeout = setTimeout(() => {
+    const t = setTimeout(() => {
       router.replace("/auth/login");
     }, 0);
+    return () => clearTimeout(t);
   }, []);
 
   return null;

@@ -14,8 +14,6 @@ const LoginScreen = () => {
     try {
       setIsAuthenticating(true);
 
-      console.log("📡 API_URL =", API_URL);
-
       const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: {
