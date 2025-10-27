@@ -1,8 +1,6 @@
-// components/FoundItemForm.tsx
 import React, { useState } from "react";
 import {
   Alert,
-  Button,
   Platform,
   Pressable,
   ScrollView,
@@ -14,6 +12,7 @@ import {
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
+import Button from "./Button";
 import LocationPicker from "./location-picker";
 import { foundItemCategories } from "../../models/FoundItem";
 import { CATEGORY_LABELS, CONTACT_METHOD_LABELS } from "../../i18n/labels";
@@ -27,29 +26,24 @@ type FoundItemFormProps = {
 };
 
 const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
-  // wymagane
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
-  // data & czas (na starcie pusto)
   const [dateFound, setDateFound] = useState<Date | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false); // iOS: datetime; Android: data
-  const [showTimePicker, setShowTimePicker] = useState(false); // Android: czas po dacie
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempAndroidDate, setTempAndroidDate] = useState<Date | null>(null);
 
-  // lokalizacja
   const [location, setLocation] = useState<{
     lat: number;
     lng: number;
     address?: string;
   } | null>(null);
 
-  // kategorie + pytania
   const [categories, setCategories] = useState<string[]>([]);
   const [question1, setQuestion1] = useState("");
   const [question2, setQuestion2] = useState("");
 
-  // kontakt
   const [contactMethod, setContactMethod] = useState<ContactMethod>("email");
   const [contactDetails, setContactDetails] = useState("");
 
@@ -58,7 +52,6 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
       prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]
     );
 
-  // ————— pickery daty/czasu —————
   const openDateTimePicker = () => setShowDatePicker(true);
 
   const onChangeDate = (e: DateTimePickerEvent, selected?: Date) => {
@@ -67,7 +60,6 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
       if (e.type !== "neutralButtonPressed") setShowDatePicker(false);
       return;
     }
-    // Android — krok 1: data
     if (e.type === "set" && selected) {
       setTempAndroidDate(selected);
       setShowDatePicker(false);
@@ -80,7 +72,6 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
 
   const onChangeTime = (e: DateTimePickerEvent, selected?: Date) => {
     if (e.type === "set" && selected && tempAndroidDate) {
-      // Składamy finalną LOKALNĄ datę (bez ręcznego offsetu)
       const finalDate = new Date(
         tempAndroidDate.getFullYear(),
         tempAndroidDate.getMonth(),
@@ -96,7 +87,6 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
     setTempAndroidDate(null);
   };
 
-  // ————— walidacja —————
   const validate = () => {
     if (!title.trim() || !description.trim()) {
       Alert.alert("Uwaga", "Uzupełnij tytuł i opis.");
@@ -129,7 +119,6 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
     return true;
   };
 
-  // ————— submit —————
   const handleSubmit = async () => {
     if (!validate()) return;
 
@@ -137,7 +126,7 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
       const body = {
         title: title.trim(),
         description: description.trim(),
-        dateFound: dateFound!.toISOString(), // backend trzyma UTC
+        dateFound: dateFound!.toISOString(),
         foundLocation: {
           lat: location!.lat,
           lng: location!.lng,
@@ -154,7 +143,6 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
 
       await Api.createFoundItem(body);
 
-      // reset
       setTitle("");
       setDescription("");
       setDateFound(null);
@@ -177,7 +165,6 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
     }
   };
 
-  // ————— UI —————
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {/* Tytuł */}
@@ -201,7 +188,7 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
 
       {/* Data i czas */}
       <Text style={styles.label}>Data i czas znalezienia *</Text>
-      <Button title="Wybierz datę i czas" onPress={openDateTimePicker} />
+      <Button onPress={openDateTimePicker}>Wybierz datę i czas</Button>
       {dateFound && (
         <Text style={{ marginTop: 8, color: "#555" }}>
           Wybrano: {formatDateTimePL(dateFound)}
@@ -318,7 +305,7 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
       />
 
       <View style={{ height: 12 }} />
-      <Button title="Dodaj przedmiot" onPress={handleSubmit} />
+      <Button onPress={handleSubmit}>Dodaj przedmiot</Button>
       <View style={{ height: 32 }} />
     </ScrollView>
   );
