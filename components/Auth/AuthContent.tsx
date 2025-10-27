@@ -13,7 +13,7 @@ import Toast from "react-native-toast-message";
 import {
   loginSchema,
   registerSchema,
-} from "../../shared/src/schemas/authSchema";
+} from "../../shared/src/schemas/AuthSchema";
 
 type AuthContentProps =
   | {

@@ -1,17 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ActivityIndicator,
-  ScrollView,
   TextInput,
   Pressable,
   Alert,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import dayjs from "dayjs";
 import "dayjs/locale/pl";
+import BottomSheet, {
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+  BottomSheetTextInput,
+} from "@gorhom/bottom-sheet";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Api } from "../../services/api";
 
 type FoundItem = {
@@ -28,12 +34,17 @@ type FoundItem = {
   createdAt?: string;
 };
 
-const ItemDetailsScreen = () => {
+const ItemDetailsModal = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [item, setItem] = useState<FoundItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [ans1, setAns1] = useState("");
   const [ans2, setAns2] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const insets = useSafeAreaInsets();
+  const sheetRef = useRef<BottomSheet>(null);
+  const snapPoints = useMemo(() => ["60%", "92%"], []);
 
   useEffect(() => {
     const load = async () => {
@@ -43,6 +54,7 @@ const ItemDetailsScreen = () => {
       } catch (e) {
         console.error(e);
         Alert.alert("Błąd", "Nie udało się pobrać ogłoszenia.");
+        router.back();
       } finally {
         setLoading(false);
       }
@@ -50,96 +62,182 @@ const ItemDetailsScreen = () => {
     load();
   }, [id]);
 
+  const close = useCallback(() => router.back(), []);
+
+  const renderBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
+
   const submitAnswers = async () => {
     if (!ans1.trim() || !ans2.trim()) {
       Alert.alert("Uwaga", "Uzupełnij obie odpowiedzi.");
       return;
     }
     try {
+      setSubmitting(true);
       const data = await Api.post(`/api/found-items/${id}/answers`, {
         answers: [ans1.trim(), ans2.trim()],
       });
       Alert.alert("Wysłano", data?.message || "Odpowiedź została zapisana.");
       setAns1("");
       setAns2("");
+      close();
     } catch (e: any) {
       Alert.alert("Błąd", e.message || "Coś poszło nie tak");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  if (loading || !item) {
-    return (
-      <View style={styles.center}>
-        {loading ? (
-          <ActivityIndicator size="large" />
-        ) : (
-          <Text>Brak danych</Text>
-        )}
-      </View>
-    );
-  }
-
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.meta}>
-        Znaleziono:{" "}
-        {dayjs(item.dateFound).locale("pl").format("D MMMM YYYY, HH:mm")}
-      </Text>
-      <Text style={styles.location}>📍 {item.foundLocation.description}</Text>
+    <View style={[styles.overlay, { paddingTop: insets.top }]}>
+      <BottomSheet
+        ref={sheetRef}
+        index={1}
+        snapPoints={snapPoints}
+        enablePanDownToClose
+        onClose={close}
+        topInset={insets.top}
+        backdropComponent={renderBackdrop}
+        android_keyboardInputMode="adjustResize"
+        keyboardBehavior="fillParent"
+        handleIndicatorStyle={{ backgroundColor: "#E1E1E1" }}
+        backgroundStyle={{
+          backgroundColor: "#fff",
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+        }}
+      >
+        <BottomSheetScrollView
+          contentContainerStyle={[
+            styles.container,
+            { paddingBottom: 16 + insets.bottom },
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <Text style={styles.titleTop} numberOfLines={1}>
+              {item?.title || "Szczegóły"}
+            </Text>
+            <Pressable onPress={close} hitSlop={10} style={styles.closeBtn}>
+              <Text style={styles.closeText}>✕</Text>
+            </Pressable>
+          </View>
 
-      {!!item.categories?.length && (
-        <View style={styles.tagsWrap}>
-          {item.categories.map((c) => (
-            <View key={c} style={styles.tag}>
-              <Text style={styles.tagText}>{c}</Text>
+          {loading ? (
+            <View style={styles.center}>
+              <ActivityIndicator size="large" />
             </View>
-          ))}
-        </View>
-      )}
+          ) : !item ? (
+            <View style={styles.center}>
+              <Text>Brak danych</Text>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.meta}>
+                Znaleziono:{" "}
+                {dayjs(item.dateFound)
+                  .locale("pl")
+                  .format("D MMMM YYYY, HH:mm")}
+              </Text>
+              <Text style={styles.location}>
+                📍 {item.foundLocation.description}
+              </Text>
 
-      <Text style={styles.sectionTitle}>Opis</Text>
-      <Text style={styles.desc}>{item.description}</Text>
+              {!!item.categories?.length && (
+                <View style={styles.tagsWrap}>
+                  {item.categories.map((c) => (
+                    <View key={c} style={styles.tag}>
+                      <Text style={styles.tagText}>{c}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
 
-      <Text style={styles.sectionTitle}>Weryfikacja</Text>
-      <Text style={styles.q}>{item.securityQuestions?.[0]}</Text>
-      <TextInput
-        style={styles.input}
-        value={ans1}
-        onChangeText={setAns1}
-        placeholder="Twoja odpowiedź"
-      />
-      <Text style={styles.q}>{item.securityQuestions?.[1]}</Text>
-      <TextInput
-        style={styles.input}
-        value={ans2}
-        onChangeText={setAns2}
-        placeholder="Twoja odpowiedź"
-      />
+              <Text style={styles.sectionTitle}>Opis</Text>
+              <Text style={styles.desc}>{item.description}</Text>
 
-      <Pressable
-        onPress={submitAnswers}
-        style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}
-      >
-        <Text style={styles.btnText}>Wyślij odpowiedzi</Text>
-      </Pressable>
+              <Text style={styles.sectionTitle}>Weryfikacja</Text>
+              <Text style={styles.q}>
+                {item.securityQuestions?.[0] ?? "Pytanie 1"}
+              </Text>
+              <BottomSheetTextInput
+                style={styles.input}
+                value={ans1}
+                onChangeText={setAns1}
+                placeholder="Twoja odpowiedź"
+                returnKeyType="next"
+              />
+              <Text style={styles.q}>
+                {item.securityQuestions?.[1] ?? "Pytanie 2"}
+              </Text>
+              <BottomSheetTextInput
+                style={styles.input}
+                value={ans2}
+                onChangeText={setAns2}
+                placeholder="Twoja odpowiedź"
+                returnKeyType="send"
+                onSubmitEditing={submitAnswers}
+              />
 
-      <Pressable
-        onPress={() => router.back()}
-        style={({ pressed }) => [styles.link, pressed && { opacity: 0.7 }]}
-      >
-        <Text style={styles.linkText}>⟵ Wróć do mapy</Text>
-      </Pressable>
-    </ScrollView>
+              <Pressable
+                onPress={submitAnswers}
+                disabled={submitting}
+                style={({ pressed }) => [
+                  styles.btn,
+                  (pressed || submitting) && { opacity: 0.8 },
+                ]}
+              >
+                <Text style={styles.btnText}>
+                  {submitting ? "Wysyłanie..." : "Wyślij odpowiedzi"}
+                </Text>
+              </Pressable>
+            </>
+          )}
+        </BottomSheetScrollView>
+      </BottomSheet>
+    </View>
   );
 };
 
-export default ItemDetailsScreen;
+export default ItemDetailsModal;
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  container: { padding: 16, gap: 10 },
-  title: { fontSize: 22, fontWeight: "bold" },
+  overlay: {
+    flex: 1,
+    backgroundColor: "transparent", // backdrop robi @gorhom
+    justifyContent: "flex-end",
+  },
+  container: { paddingHorizontal: 16, gap: 10 },
+  header: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 6,
+    paddingBottom: 6,
+  },
+  closeBtn: { position: "absolute", right: 6, top: 0, padding: 8 },
+  closeText: { fontSize: 18, color: "#333" },
+  titleTop: {
+    fontSize: 18,
+    fontWeight: "700",
+    maxWidth: "70%",
+    textAlign: "center",
+  },
+
+  center: {
+    paddingVertical: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   meta: { color: "#666" },
   location: { marginTop: 6, color: "#333" },
   sectionTitle: { marginTop: 12, fontWeight: "bold" },
@@ -168,6 +266,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   btnText: { color: "#fff", fontWeight: "bold" },
-  link: { marginTop: 12, alignItems: "center" },
-  linkText: { color: "#156541", fontWeight: "600" },
 });

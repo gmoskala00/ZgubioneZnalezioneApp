@@ -1,3 +1,6 @@
+import "react-native-reanimated";
+import "react-native-gesture-handler";
+
 import { useCallback, useEffect, useState } from "react";
 import { Stack } from "expo-router";
 import { View } from "react-native";
@@ -6,7 +9,7 @@ import * as Font from "expo-font";
 import { AuthContextProvider } from "../store/AuthContext";
 import Toast from "react-native-toast-message";
 import { toastConfig } from "../components/UI/toastConfig";
-import { GlobalStyles } from "../constants/style";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -44,15 +47,26 @@ export default function RootLayout() {
   return (
     <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <AuthContextProvider>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-          }}
-        >
-          <Stack.Screen name="auth" />
-          <Stack.Screen name="(tabs)" />
-        </Stack>
-        <Toast config={toastConfig} topOffset={75} />
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+            }}
+          >
+            <Stack.Screen name="auth" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen
+              name="item/[id]"
+              options={{
+                presentation: "transparentModal",
+                contentStyle: { backgroundColor: "transparent" },
+                headerShown: false,
+                gestureEnabled: true,
+              }}
+            />
+          </Stack>
+          <Toast config={toastConfig} topOffset={75} />
+        </GestureHandlerRootView>
       </AuthContextProvider>
     </View>
   );
