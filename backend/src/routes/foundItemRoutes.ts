@@ -109,6 +109,20 @@ router.get("/bbox", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+router.get("/:id", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const item = await FoundItem.findById(req.params.id);
+    if (!item) {
+      res.status(404).json({ message: "Ogłoszenie nie istnieje." });
+      return;
+    }
+    res.json(item);
+  } catch (err) {
+    console.error("Get by id error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 router.use("/:id/answers", itemAnswerRoutes);
 
 export default router;

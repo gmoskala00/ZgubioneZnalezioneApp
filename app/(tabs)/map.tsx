@@ -67,7 +67,7 @@ const MapScreen = () => {
           }}
           title={it.title}
           description={it.foundLocation.description}
-          onCalloutPress={() => router.push(`/item/${it._id}`)} // ✨ tu nawigacja
+          onCalloutPress={() => router.push(`/item/${it._id}`)}
         >
           <Callout tooltip={false}>
             <View style={styles.callout}>
