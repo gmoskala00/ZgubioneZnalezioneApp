@@ -77,7 +77,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="messeges"
+        name="inbox"
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons
@@ -86,7 +86,7 @@ export default function TabsLayout() {
               color={color}
             />
           ),
-          title: "Messages",
+          title: "Inbox",
         }}
       />
       <Tabs.Screen

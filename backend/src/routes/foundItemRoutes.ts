@@ -2,7 +2,6 @@ import { Router, Request, Response } from "express";
 import FoundItem from "../models/FoundItem";
 import { foundItemSchema } from "../../../shared/dist/schemas/FoundItemSchema";
 import { verifyToken, AuthenticatedRequest } from "../middleware/verifyToken";
-import itemAnswerRoutes from "./itemAnswerRoutes";
 
 const router = Router();
 
@@ -122,7 +121,5 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ message: "Server error" });
   }
 });
-
-router.use("/:id/answers", itemAnswerRoutes);
 
 export default router;

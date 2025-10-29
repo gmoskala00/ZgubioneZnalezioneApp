@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
 import foundItemRoutes from "./routes/foundItemRoutes";
+import claimRoutes from "./routes/claimRoutes";
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/found-items", foundItemRoutes);
+app.use("/api/claims", claimRoutes);
 
 app.get("/", (_req, res) => {
   res.send("API LIVE");

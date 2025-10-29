@@ -83,7 +83,7 @@ const ItemDetailsModal = () => {
     }
     try {
       setSubmitting(true);
-      const data = await Api.post(`/api/found-items/${id}/answers`, {
+      const data = await Api.post(`/api/claims/${id}`, {
         answers: [ans1.trim(), ans2.trim()],
       });
       Alert.alert("Wysłano", data?.message || "Odpowiedź została zapisana.");

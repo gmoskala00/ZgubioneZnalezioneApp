@@ -18,6 +18,7 @@ export async function authorizedFetch(path: string, init: RequestInit = {}) {
   if (init.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
+
   if (authToken && !headers.has("Authorization")) {
     headers.set("Authorization", `Bearer ${authToken}`);
   }
@@ -26,21 +27,25 @@ export async function authorizedFetch(path: string, init: RequestInit = {}) {
 
   if (res.status === 401) {
     onUnauthorized?.();
-    throw new Error("Unauthorized");
+    throw new Error("Unauthorized - Sesja wygasła lub brak uprawnień");
   }
+
   return res;
 }
 
 export async function asJson<T>(res: Response): Promise<T> {
   const text = await res.text();
   let data: any = null;
+
   try {
     data = JSON.parse(text);
   } catch {}
 
   if (!res.ok) {
-    const msg = data?.message || text.slice(0, 160) || "Request failed";
+    const msg =
+      data?.message || text.slice(0, 160) || "Żądanie nie powiodło się";
     throw new Error(msg);
   }
+
   return data as T;
 }
