@@ -1,35 +1,38 @@
 import { authorizedFetch, asJson } from "./http";
 import type { FoundItem } from "../models/FoundItem";
-import type { UserData } from "../models/auth";
+import type {
+  UserData,
+  LoginCredentials,
+  AuthCredentials,
+} from "../models/auth";
 
 export const Api = {
-  get: <T = any>(path: string) => authorizedFetch(path).then(asJson<T>),
-
-  post: <T = any>(path: string, body?: any) =>
-    authorizedFetch(path, {
+  // ======== AUTH ========
+  login: async (credentials: LoginCredentials) =>
+    authorizedFetch("/api/auth/login", {
       method: "POST",
-      body: body ? JSON.stringify(body) : undefined,
-    }).then(asJson<T>),
+      body: JSON.stringify(credentials),
+      headers: { "Content-Type": "application/json" },
+    })
+      .then(asJson<{ user: UserData; token: string }>)
+      .catch((err) => {
+        throw new Error(err.message || "Błąd logowania");
+      }),
 
-  put: <T = any>(path: string, body?: any) =>
-    authorizedFetch(path, {
-      method: "PUT",
-      body: body ? JSON.stringify(body) : undefined,
-    }).then(asJson<T>),
-
-  del: <T = any>(path: string) =>
-    authorizedFetch(path, { method: "DELETE" }).then(asJson<T>),
-
-  delete: <T = any>(path: string) => Api.del<T>(path),
-
-  patch: <T = any>(path: string, body?: any) =>
-    authorizedFetch(path, {
-      method: "PATCH",
-      body: body ? JSON.stringify(body) : undefined,
-    }).then(asJson<T>),
+  register: async (credentials: AuthCredentials) =>
+    authorizedFetch("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify(credentials),
+      headers: { "Content-Type": "application/json" },
+    })
+      .then(asJson<{ user: UserData; token: string }>)
+      .catch((err) => {
+        throw new Error(err.message || "Błąd rejestracji");
+      }),
 
   getMe: () => Api.get<UserData>("/api/users/me"),
 
+  // ======== FOUND ITEMS ========
   listFoundItems: () => Api.get<FoundItem[]>("/api/found-items"),
 
   listFoundItemsBBox: (
@@ -65,4 +68,28 @@ export const Api = {
 
   deleteFoundItem: (id: string) =>
     Api.del<{ message: string }>(`/api/found-items/${id}`),
+
+  // ======== OGÓLNE METODY ========
+  get: <T = any>(path: string) => authorizedFetch(path).then(asJson<T>),
+
+  post: <T = any>(path: string, body?: any) =>
+    authorizedFetch(path, {
+      method: "POST",
+      body: body ? JSON.stringify(body) : undefined,
+    }).then(asJson<T>),
+
+  put: <T = any>(path: string, body?: any) =>
+    authorizedFetch(path, {
+      method: "PUT",
+      body: body ? JSON.stringify(body) : undefined,
+    }).then(asJson<T>),
+
+  del: <T = any>(path: string) =>
+    authorizedFetch(path, { method: "DELETE" }).then(asJson<T>),
+
+  patch: <T = any>(path: string, body?: any) =>
+    authorizedFetch(path, {
+      method: "PATCH",
+      body: body ? JSON.stringify(body) : undefined,
+    }).then(asJson<T>),
 };

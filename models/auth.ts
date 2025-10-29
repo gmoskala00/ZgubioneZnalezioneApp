@@ -20,7 +20,7 @@ export type LoginCredentials = {
 };
 
 export type UserData = {
-  id: string;
+  _id: string;
   username: string;
   email: string;
   phoneNumber?: string;

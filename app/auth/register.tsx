@@ -1,10 +1,10 @@
 import AuthContent from "../../components/Auth/AuthContent";
 import { AuthCredentials } from "../../models/auth";
-import { API_URL } from "../../constants/api";
 import { useAuth } from "../../store/AuthContext";
 import { useState } from "react";
 import LoadingOverlay from "../../components/UI/LoadingOverlay";
 import Toast from "react-native-toast-message";
+import { Api } from "../../services/api";
 
 const RegisterScreen = () => {
   const { authenticate } = useAuth();
@@ -13,35 +13,21 @@ const RegisterScreen = () => {
   const registerUser = async (credentials: AuthCredentials) => {
     try {
       setIsAuthenticating(true);
-      const response = await fetch(`${API_URL}/api/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(credentials),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Registration failed");
-      }
-
-      authenticate(data.user._id, data.token);
-    } catch (err) {
+      const { user, token } = await Api.register(credentials);
+      authenticate(user._id, token);
+      Toast.show({ type: "success", text1: "Rejestracja zakończona!" });
+    } catch (error) {
       Toast.show({
         type: "error",
-        text1: "❌ Registration Fail",
-        text2: (err as Error).message,
+        text1: "Błąd rejestracji",
+        text2: (error as Error).message,
       });
     } finally {
       setIsAuthenticating(false);
     }
   };
 
-  if (isAuthenticating) {
-    return <LoadingOverlay message="Creating User..." />;
-  }
+  if (isAuthenticating) return <LoadingOverlay message="Tworzenie konta..." />;
 
   return <AuthContent isLogin={false} onAuthenticate={registerUser} />;
 };
