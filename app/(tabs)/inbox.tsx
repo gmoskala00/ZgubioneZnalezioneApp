@@ -125,8 +125,8 @@ export default function InboxScreen() {
             +new Date(a.data[0]?.createdAt ?? 0)
         );
     } else {
-      const ACTIVE: ClaimStatus[] = ["pending"];
-      const CLOSED: ClaimStatus[] = ["approved", "rejected", "completed"];
+      const ACTIVE: ClaimStatus[] = ["pending", "approved"];
+      const CLOSED: ClaimStatus[] = ["rejected", "completed"];
       const filtered = claimsSent.filter((c) =>
         subTab === "active"
           ? ACTIVE.includes(c.status)
@@ -178,9 +178,7 @@ export default function InboxScreen() {
   const renderHeaderMeta = (section: { itemId: string; data: Claim[] }) => {
     if (mode === "responses") return "Twoja odpowiedź";
     const count = section.data.length;
-    return `${count} odpowiedź${
-      count === 1 ? "" : count >= 2 && count <= 4 ? "e" : "i"
-    }`;
+    return `${count} odpowied${count === 1 ? "ź" : "zi"}`;
   };
 
   const renderContacts = (c: Claim) => {
@@ -368,18 +366,6 @@ export default function InboxScreen() {
                           style={[styles.btn, styles.btnReject]}
                         >
                           <Text style={styles.btnText}>Odrzuć</Text>
-                        </Pressable>
-                        <Pressable
-                          onPress={() =>
-                            confirm(
-                              "Archiwizować?",
-                              "Przenieść do archiwum?",
-                              () => updateStatus(item._id, "archived")
-                            )
-                          }
-                          style={[styles.btn, styles.btnArchive]}
-                        >
-                          <Text style={styles.btnText}>Archiwizuj</Text>
                         </Pressable>
                       </View>
                     )}
