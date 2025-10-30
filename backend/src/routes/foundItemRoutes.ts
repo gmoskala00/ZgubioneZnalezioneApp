@@ -74,7 +74,7 @@ router.get("/bbox", async (req: Request, res: Response): Promise<void> => {
   const filter: any = {
     "foundLocation.lat": { $gte: s, $lte: n },
     "foundLocation.lng": { $gte: w, $lte: e },
-    status: { $ne: "expired" },
+    status: { $nin: ["expired", "returned"] },
   };
 
   if (categories.length > 0) {
