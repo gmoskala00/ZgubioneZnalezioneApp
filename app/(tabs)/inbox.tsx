@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,9 @@ import { GlobalStyles } from "../../constants/style";
 import { useAuth } from "../../store/AuthContext";
 import { labelStatus } from "../../i18n/labels";
 
+dayjs.locale("pl");
+
+/** Statusy pojedynczej odpowiedzi (claimu) */
 type ClaimStatus =
   | "pending"
   | "approved"
@@ -22,6 +25,7 @@ type ClaimStatus =
   | "completed"
   | "expired";
 
+/** Pojedyncza odpowiedź */
 type Claim = {
   _id: string;
   itemId: string;
@@ -32,58 +36,74 @@ type Claim = {
   message?: string;
   status: ClaimStatus;
   createdAt: string;
+  ownerUnread?: boolean;
+  responderUnread?: boolean;
 };
 
 type InboxGroup = {
   itemId: string;
   itemTitle: string;
-  itemStatus: "active" | "returned" | "expired";
+  itemStatus?: "active" | "expired" | "returned";
   claims: Claim[];
 };
 
-type ModeKey = "mine" | "responses"; // Moje ogłoszenia / Moje odpowiedzi
-type SubKey = "active" | "closed"; // Aktualne / Zakończone
+type ModeKey = "mine" | "responses";
+type SubMine = "active" | "closed";
+type SubResp = "pending" | "approved" | "rejected";
 
 export default function InboxScreen() {
   const { userId } = useAuth();
   const [mode, setMode] = useState<ModeKey>("mine");
-  const [subTab, setSubTab] = useState<SubKey>("active");
-  const [mineGroups, setMineGroups] = useState<InboxGroup[]>([]);
-  const [sentClaims, setSentClaims] = useState<Claim[]>([]);
+  const [subMine, setSubMine] = useState<SubMine>("active");
+  const [subResp, setSubResp] = useState<SubResp>("pending");
+
+  const [groupsMine, setGroupsMine] = useState<InboxGroup[]>([]);
+  const [claimsResp, setClaimsResp] = useState<Claim[]>([]);
   const [loading, setLoading] = useState(false);
+
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-  const fetchMine = async () => {
-    setLoading(true);
-    try {
-      const res = await Api.get<InboxGroup[]>("/api/claims/inbox");
-      setMineGroups(res);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [badgeMine, setBadgeMine] = useState(0);
+  const [badgeResp, setBadgeResp] = useState(0);
 
-  const fetchSent = async () => {
-    setLoading(true);
+  const refreshBadges = useCallback(async () => {
     try {
-      const res = await Api.get<Claim[]>("/api/claims/sent");
-      setSentClaims(res);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
+      const [m, r] = await Promise.all([
+        Api.unreadCount("mine"),
+        Api.unreadCount("responses"),
+      ]);
+      setBadgeMine(m.count);
+      setBadgeResp(r.count);
+    } catch {}
+  }, []);
 
   useEffect(() => {
-    if (mode === "mine") fetchMine();
-    else fetchSent();
-  }, [mode]);
+    refreshBadges();
+  }, [refreshBadges]);
 
-  const ACTIVE: ClaimStatus[] = ["pending", "approved"];
-  const CLOSED: ClaimStatus[] = [
+  const fetchData = useCallback(async (m: ModeKey) => {
+    setLoading(true);
+    try {
+      if (m === "mine") {
+        const res = await Api.get<InboxGroup[]>("/api/claims/inbox");
+        setGroupsMine(res);
+      } else {
+        const res = await Api.get<Claim[]>("/api/claims/sent");
+        setClaimsResp(res);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData(mode);
+  }, [mode, fetchData]);
+
+  const ACTIVE_STATUSES: ClaimStatus[] = ["pending", "approved"];
+  const CLOSED_STATUSES: ClaimStatus[] = [
     "rejected",
     "archived",
     "completed",
@@ -92,105 +112,166 @@ export default function InboxScreen() {
 
   const sections = useMemo(() => {
     if (mode === "mine") {
-      // Pokaż WSZYSTKIE moje ogłoszenia w „Aktualne” (nawet z 0 odp.)
-      const groupsFiltered = mineGroups.filter((g) => {
-        if (subTab === "active") {
-          return g.itemStatus !== "returned" && g.itemStatus !== "expired";
+      const isItemClosed = (g: InboxGroup) =>
+        g.itemStatus === "returned" || g.itemStatus === "expired";
+
+      const mineFiltered = groupsMine.filter((g) => {
+        if (subMine === "active") {
+          const anyActive = g.claims.some((c) =>
+            ACTIVE_STATUSES.includes(c.status)
+          );
+          return !isItemClosed(g) || anyActive || g.claims.length === 0;
         } else {
-          return g.itemStatus === "returned" || g.itemStatus === "expired";
+          const anyClosed = g.claims.some((c) =>
+            CLOSED_STATUSES.includes(c.status)
+          );
+          return isItemClosed(g) || anyClosed;
         }
       });
 
-      return groupsFiltered
-        .map((g) => {
-          const claimsFiltered =
-            subTab === "active"
-              ? (g.claims ?? []).filter((c) => ACTIVE.includes(c.status))
-              : (g.claims ?? []).filter((c) => CLOSED.includes(c.status));
+      return mineFiltered
+        .map((g) => ({
+          itemId: g.itemId,
+          title: g.itemTitle || "Ogłoszenie",
+          data: [...g.claims].sort(
+            (a, b) => +new Date(b.createdAt || 0) - +new Date(a.createdAt || 0)
+          ),
+          itemStatus: g.itemStatus,
+        }))
+        .sort(
+          (a, b) =>
+            +new Date(b.data[0]?.createdAt ?? 0) -
+            +new Date(a.data[0]?.createdAt ?? 0)
+        );
+    }
 
-          claimsFiltered.sort(
-            (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)
-          );
+    const filteredClaims = claimsResp.filter((c) => c.status === subResp);
 
-          return {
-            itemId: g.itemId,
-            title: g.itemTitle,
-            data: claimsFiltered, // UWAGA: może być [] — i tak pokażemy pustą sekcję
-          };
-        })
-        .sort((A, B) => {
-          const aTop = A.data[0]?.createdAt ?? 0;
-          const bTop = B.data[0]?.createdAt ?? 0;
-          return +new Date(bTop) - +new Date(aTop);
-        });
-    } else {
-      // Moje odpowiedzi — grupujemy po itemId
-      const list =
-        subTab === "active"
-          ? sentClaims.filter((c) => ACTIVE.includes(c.status))
-          : sentClaims.filter((c) => CLOSED.includes(c.status));
+    const map = new Map<string, { title: string; claims: Claim[] }>();
+    filteredClaims.forEach((c) => {
+      const k = c.itemId;
+      const group = map.get(k) ?? {
+        title: c.itemTitle ?? "Ogłoszenie",
+        claims: [],
+      };
+      group.claims.push(c);
+      map.set(k, group);
+    });
 
-      const map = new Map<string, { title: string; claims: Claim[] }>();
-      list.forEach((c) => {
-        const key = c.itemId;
-        const g = map.get(key) ?? {
-          title: c.itemTitle ?? "Ogłoszenie",
-          claims: [],
-        };
-        g.claims.push(c);
-        map.set(key, g);
-      });
-
-      return Array.from(map.entries()).map(([itemId, g]) => ({
+    return Array.from(map.entries())
+      .map(([itemId, g]) => ({
         itemId,
         title: g.title,
         data: g.claims.sort(
-          (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)
+          (a, b) => +new Date(b.createdAt || 0) - +new Date(a.createdAt || 0)
         ),
-      }));
-    }
-  }, [mode, subTab, mineGroups, sentClaims]);
+      }))
+      .sort(
+        (a, b) =>
+          +new Date(b.data[0]?.createdAt ?? 0) -
+          +new Date(a.data[0]?.createdAt ?? 0)
+      );
+  }, [mode, subMine, subResp, groupsMine, claimsResp]);
 
   const toggle = (itemId: string) =>
     setExpanded((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
 
-  const setStatus = async (
-    id: string,
-    status: "approved" | "rejected" | "archived" | "completed"
-  ) => {
-    try {
-      await Api.patch(`/api/claims/${id}/status`, { status });
-    } catch (e) {
-      console.error(e);
-    } finally {
-      // Odśwież bieżący tryb
-      if (mode === "mine") fetchMine();
-      else fetchSent();
+  const headerHasUnread = (section: any) => {
+    if (!section?.data) return false;
+    if (mode === "mine") {
+      return section.data.some((c: Claim) => c.ownerUnread);
     }
+    return section.data.some((c: Claim) => c.responderUnread);
   };
 
-  const isSentMode = mode === "responses";
+  const markSectionSeen = async (section: any) => {
+    try {
+      const toMark = (section.data as Claim[]).filter((c) =>
+        mode === "mine" ? c.ownerUnread : c.responderUnread
+      );
+      if (toMark.length === 0) return;
+      await Promise.all(
+        toMark.map((c) =>
+          Api.markClaimSeen(c._id, mode === "mine" ? "owner" : "responder")
+        )
+      );
+      refreshBadges();
+      if (mode === "mine") {
+        setGroupsMine((prev) =>
+          prev.map((g) =>
+            g.itemId === section.itemId
+              ? {
+                  ...g,
+                  claims: g.claims.map((c) =>
+                    toMark.find((x) => x._id === c._id)
+                      ? { ...c, ownerUnread: false }
+                      : c
+                  ),
+                }
+              : g
+          )
+        );
+      } else {
+        setClaimsResp((prev) =>
+          prev.map((c) =>
+            toMark.find((x) => x._id === c._id)
+              ? { ...c, responderUnread: false }
+              : c
+          )
+        );
+      }
+    } catch {}
+  };
+
+  const getStatusTextStyle = (s: ClaimStatus) => ({
+    fontWeight: "bold" as const,
+    color:
+      s === "approved"
+        ? "#2e7d32"
+        : s === "rejected"
+        ? GlobalStyles.colors.error
+        : s === "pending"
+        ? "#f9a825"
+        : s === "archived"
+        ? "#546e7a"
+        : s === "expired"
+        ? "#8e8e8e"
+        : GlobalStyles.colors.primaryDark,
+  });
 
   return (
     <View style={{ flex: 1, backgroundColor: GlobalStyles.colors.background }}>
       {/* GŁÓWNE ZAKŁADKI */}
       <View style={styles.mainTabs}>
         {[
-          { key: "mine", label: "🧭 Moje ogłoszenia" },
-          { key: "responses", label: "💬 Moje odpowiedzi" },
+          { key: "mine", label: "🧭 Moje ogłoszenia", badge: badgeMine },
+          { key: "responses", label: "💬 Moje odpowiedzi", badge: badgeResp },
         ].map((t) => {
-          const active = mode === (t.key as ModeKey);
+          const k = t.key as ModeKey;
+          const active = mode === k;
           return (
             <Pressable
               key={t.key}
-              onPress={() => setMode(t.key as ModeKey)}
+              onPress={() => setMode(k)}
               style={[styles.mainTab, active && styles.mainTabActive]}
             >
-              <Text
-                style={[styles.mainTabText, active && styles.mainTabTextActive]}
+              <View
+                style={{ flexDirection: "row", gap: 6, alignItems: "center" }}
               >
-                {t.label}
-              </Text>
+                <Text
+                  style={[
+                    styles.mainTabText,
+                    active && styles.mainTabTextActive,
+                  ]}
+                >
+                  {t.label}
+                </Text>
+                {!!t.badge && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{t.badge}</Text>
+                  </View>
+                )}
+              </View>
             </Pressable>
           );
         })}
@@ -198,25 +279,56 @@ export default function InboxScreen() {
 
       {/* PODZAKŁADKI */}
       <View style={styles.subTabs}>
-        {[
-          { key: "active", label: "📬 Aktualne" },
-          { key: "closed", label: "🗂️ Zakończone" },
-        ].map((t) => {
-          const active = subTab === (t.key as SubKey);
-          return (
-            <Pressable
-              key={t.key}
-              onPress={() => setSubTab(t.key as SubKey)}
-              style={[styles.subTab, active && styles.subTabActive]}
-            >
-              <Text
-                style={[styles.subTabText, active && styles.subTabTextActive]}
-              >
-                {t.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+        {mode === "mine"
+          ? (
+              [
+                { key: "active", label: "📬 Aktualne" },
+                { key: "closed", label: "🗂️ Zakończone" },
+              ] as const
+            ).map((t) => {
+              const active = subMine === t.key;
+              return (
+                <Pressable
+                  key={t.key}
+                  onPress={() => setSubMine(t.key)}
+                  style={[styles.subTab, active && styles.subTabActive]}
+                >
+                  <Text
+                    style={[
+                      styles.subTabText,
+                      active && styles.subTabTextActive,
+                    ]}
+                  >
+                    {t.label}
+                  </Text>
+                </Pressable>
+              );
+            })
+          : (
+              [
+                { key: "pending", label: "⏳ Oczekujące" },
+                { key: "approved", label: "✅ Zaakceptowane" },
+                { key: "rejected", label: "❌ Odmowy" },
+              ] as const
+            ).map((t) => {
+              const active = subResp === t.key;
+              return (
+                <Pressable
+                  key={t.key}
+                  onPress={() => setSubResp(t.key)}
+                  style={[styles.subTab, active && styles.subTabActive]}
+                >
+                  <Text
+                    style={[
+                      styles.subTabText,
+                      active && styles.subTabTextActive,
+                    ]}
+                  >
+                    {t.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
       </View>
 
       {loading ? (
@@ -227,26 +339,35 @@ export default function InboxScreen() {
         <SectionList
           sections={sections}
           keyExtractor={(item) => item._id}
-          renderSectionHeader={({ section }) => {
-            const count = section.data.length;
-            const meta = isSentMode
-              ? "Twoja odpowiedź"
-              : `${count} odpowiedź${count === 1 ? "" : "i"}`;
+          renderSectionHeader={({ section }) => (
+            <Pressable
+              style={styles.header}
+              onPress={() => {
+                const willExpand = !expanded[section.itemId];
+                toggle(section.itemId);
+                if (willExpand) {
+                  markSectionSeen(section);
+                }
+              }}
+            >
+              <Text style={styles.headerTitle} numberOfLines={1}>
+                {section.title}
+              </Text>
 
-            return (
-              <Pressable
-                style={styles.header}
-                onPress={() => toggle(section.itemId)}
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
               >
-                <Text style={styles.headerTitle} numberOfLines={1}>
-                  {section.title}
-                </Text>
+                {headerHasUnread(section) && <View style={styles.dot} />}
                 <Text style={styles.headerMeta}>
-                  {expanded[section.itemId] ? "▲" : "▼"} {meta}
+                  {mode === "responses"
+                    ? "Twoja odpowiedź"
+                    : `${section.data.length} odpowiedź${
+                        section.data.length === 1 ? "" : "i"
+                      }`}
                 </Text>
-              </Pressable>
-            );
-          }}
+              </View>
+            </Pressable>
+          )}
           renderItem={({ item, section }) =>
             expanded[section.itemId] ? (
               <View style={styles.card}>
@@ -255,9 +376,7 @@ export default function InboxScreen() {
                     {labelStatus(item.status)}
                   </Text>
                   <Text style={styles.date}>
-                    {dayjs(item.createdAt)
-                      .locale("pl")
-                      .format("D MMM YYYY, HH:mm")}
+                    {dayjs(item.createdAt).format("D MMM YYYY, HH:mm")}
                   </Text>
                 </View>
 
@@ -269,25 +388,55 @@ export default function InboxScreen() {
                   <Text style={styles.msg}>„{item.message}”</Text>
                 ) : null}
 
-                {/* Akcje: tylko MOJE OGŁOSZENIA + Aktualne + status pending/approved */}
-                {!isSentMode &&
-                  subTab === "active" &&
+                {/* Akcje tylko dla MOICH OGŁOSZEŃ w "Aktualne" i statusie pending/approved */}
+                {mode === "mine" &&
+                  subMine === "active" &&
                   item.status === "pending" && (
                     <View style={styles.actions}>
                       <Pressable
-                        onPress={() => setStatus(item._id, "approved")}
+                        onPress={async () => {
+                          try {
+                            await Api.patch(`/api/claims/${item._id}/status`, {
+                              status: "approved",
+                            });
+                            fetchData(mode);
+                            refreshBadges();
+                          } catch (e) {
+                            console.error(e);
+                          }
+                        }}
                         style={[styles.btn, styles.btnApprove]}
                       >
                         <Text style={styles.btnText}>Zatwierdź</Text>
                       </Pressable>
                       <Pressable
-                        onPress={() => setStatus(item._id, "rejected")}
+                        onPress={async () => {
+                          try {
+                            await Api.patch(`/api/claims/${item._id}/status`, {
+                              status: "rejected",
+                            });
+                            fetchData(mode);
+                            refreshBadges();
+                          } catch (e) {
+                            console.error(e);
+                          }
+                        }}
                         style={[styles.btn, styles.btnReject]}
                       >
                         <Text style={styles.btnText}>Odrzuć</Text>
                       </Pressable>
                       <Pressable
-                        onPress={() => setStatus(item._id, "archived")}
+                        onPress={async () => {
+                          try {
+                            await Api.patch(`/api/claims/${item._id}/status`, {
+                              status: "archived",
+                            });
+                            fetchData(mode);
+                            refreshBadges();
+                          } catch (e) {
+                            console.error(e);
+                          }
+                        }}
                         style={[styles.btn, styles.btnArchive]}
                       >
                         <Text style={styles.btnText}>Archiwizuj</Text>
@@ -295,12 +444,22 @@ export default function InboxScreen() {
                     </View>
                   )}
 
-                {!isSentMode &&
-                  subTab === "active" &&
+                {mode === "mine" &&
+                  subMine === "active" &&
                   item.status === "approved" && (
                     <View style={styles.actions}>
                       <Pressable
-                        onPress={() => setStatus(item._id, "completed")}
+                        onPress={async () => {
+                          try {
+                            await Api.patch(`/api/claims/${item._id}/status`, {
+                              status: "completed",
+                            });
+                            fetchData(mode);
+                            refreshBadges();
+                          } catch (e) {
+                            console.error(e);
+                          }
+                        }}
                         style={[styles.btn, styles.btnDone]}
                       >
                         <Text style={styles.btnText}>
@@ -311,16 +470,6 @@ export default function InboxScreen() {
                   )}
               </View>
             ) : null
-          }
-          // jeśli sekcja pusta i zwinięta – pokaż pusty placeholder po sekcją
-          renderSectionFooter={({ section }) =>
-            !expanded[section.itemId] || section.data.length > 0 ? null : (
-              <View style={styles.card}>
-                <Text style={{ color: GlobalStyles.colors.textSecondary }}>
-                  Brak odpowiedzi
-                </Text>
-              </View>
-            )
           }
           stickySectionHeadersEnabled={false}
           contentContainerStyle={{ padding: 12, paddingBottom: 24 }}
@@ -337,25 +486,7 @@ export default function InboxScreen() {
   );
 }
 
-/** Dynamiczny kolor statusu (poza StyleSheet.create) */
-const getStatusTextStyle = (s: ClaimStatus) => ({
-  fontWeight: "bold" as const,
-  color:
-    s === "approved"
-      ? "#2e7d32"
-      : s === "rejected"
-      ? GlobalStyles.colors.error
-      : s === "pending"
-      ? "#f9a825"
-      : s === "archived"
-      ? "#546e7a"
-      : s === "expired"
-      ? "#8e8e8e"
-      : GlobalStyles.colors.primaryDark,
-});
-
 const styles = StyleSheet.create({
-  // główne zakładki
   mainTabs: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -382,8 +513,17 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
   },
+  badge: {
+    minWidth: 18,
+    paddingHorizontal: 6,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: GlobalStyles.colors.primaryDark,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeText: { color: "#fff", fontSize: 11, fontWeight: "700" },
 
-  // podzakładki
   subTabs: {
     flexDirection: "row",
     justifyContent: "center",
@@ -409,7 +549,6 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
 
-  // sekcje i karty
   header: {
     backgroundColor: GlobalStyles.colors.card,
     padding: 12,
@@ -428,6 +567,12 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   headerMeta: { color: GlobalStyles.colors.textSecondary },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: GlobalStyles.colors.accent,
+  },
 
   card: {
     backgroundColor: GlobalStyles.colors.card,

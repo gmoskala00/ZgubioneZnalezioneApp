@@ -69,6 +69,18 @@ export const Api = {
   deleteFoundItem: (id: string) =>
     Api.del<{ message: string }>(`/api/found-items/${id}`),
 
+  // ======== CLAIMS ========:
+  sendClaim: (
+    itemId: string,
+    payload: { answers: [string, string]; message?: string }
+  ) => Api.post(`/api/claims/${itemId}`, payload),
+
+  markClaimSeen: (id: string, role: "owner" | "responder") =>
+    Api.patch(`/api/claims/${id}/seen?role=${role}`),
+
+  unreadCount: (mode: "mine" | "responses") =>
+    Api.get<{ count: number }>(`/api/claims/unread-count?mode=${mode}`),
+
   // ======== OGÓLNE METODY ========
   get: <T = any>(path: string) => authorizedFetch(path).then(asJson<T>),
 

@@ -1,21 +1,22 @@
-import { Schema, model, Document } from "mongoose";
+import { Schema, model, Document, Types } from "mongoose";
 
 export type ClaimStatus =
   | "pending"
   | "approved"
   | "rejected"
   | "archived"
-  | "completed";
+  | "completed"
+  | "expired";
 
-export interface IClaim extends Document {
-  itemId: Schema.Types.ObjectId;
-  ownerId: Schema.Types.ObjectId;
-  responderId: Schema.Types.ObjectId;
+interface IClaim extends Document {
+  itemId: Types.ObjectId;
+  ownerId: Types.ObjectId;
+  responderId: Types.ObjectId;
   answers: [string, string];
   message?: string;
   status: ClaimStatus;
-  createdAt: Date;
-  updatedAt: Date;
+  ownerUnread: boolean;
+  responderUnread: boolean;
 }
 
 const claimSchema = new Schema<IClaim>(
@@ -23,17 +24,22 @@ const claimSchema = new Schema<IClaim>(
     itemId: { type: Schema.Types.ObjectId, ref: "FoundItem", required: true },
     ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     responderId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    answers: {
-      type: [String],
-      required: true,
-      validate: [(v: string[]) => v.length === 2, "Two answers"],
-    },
+    answers: { type: [String], required: true },
     message: { type: String },
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected", "archived", "completed"],
+      enum: [
+        "pending",
+        "approved",
+        "rejected",
+        "archived",
+        "completed",
+        "expired",
+      ],
       default: "pending",
     },
+    ownerUnread: { type: Boolean, default: true },
+    responderUnread: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
