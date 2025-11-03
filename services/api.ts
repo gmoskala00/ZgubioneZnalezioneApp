@@ -31,6 +31,8 @@ export const Api = {
       }),
 
   getMe: () => Api.get<UserData>("/api/users/me"),
+  updateMe: (payload: Partial<UserData>) =>
+    Api.patch<UserData>("/api/users/me", payload),
 
   // ======== FOUND ITEMS ========
   listFoundItems: () => Api.get<FoundItem[]>("/api/found-items"),

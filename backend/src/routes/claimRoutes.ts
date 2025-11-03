@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { AuthenticatedRequest, verifyToken } from "../middleware/verifyToken";
+import { claimCreateSchema } from "../../../shared/dist/schemas/ClaimSchema";
 import Claim from "../models/Claim";
 import FoundItem from "../models/FoundItem";
 import User from "../models/User";
@@ -112,19 +113,17 @@ router.post(
   verifyToken,
   async (req: AuthenticatedRequest, res): Promise<void> => {
     const { itemId } = req.params;
-    const { answers, message } = req.body as {
-      answers: string[];
-      message?: string;
-    };
 
-    if (
-      !Array.isArray(answers) ||
-      answers.length !== 2 ||
-      answers.some((a) => !a.trim())
-    ) {
-      res.status(400).json({ message: "Podaj dwie odpowiedzi." });
+    const parsed = claimCreateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        message: "Potrzebne 2 odpowiedzi",
+        errors: parsed.error.flatten().fieldErrors,
+      });
       return;
     }
+
+    const { answers, message } = parsed.data;
 
     const item = await FoundItem.findById(itemId);
     if (!item) {

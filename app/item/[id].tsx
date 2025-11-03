@@ -4,10 +4,8 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
-  TextInput,
   Pressable,
   Alert,
-  Platform,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import dayjs from "dayjs";
@@ -40,6 +38,7 @@ const ItemDetailsModal = () => {
   const [loading, setLoading] = useState(true);
   const [ans1, setAns1] = useState("");
   const [ans2, setAns2] = useState("");
+  const [extraMsg, setExtraMsg] = useState(""); // 👈 NEW
   const [submitting, setSubmitting] = useState(false);
 
   const insets = useSafeAreaInsets();
@@ -83,12 +82,23 @@ const ItemDetailsModal = () => {
     }
     try {
       setSubmitting(true);
-      const data = await Api.post(`/api/claims/${id}`, {
+      const payload: {
+        answers: [string, string];
+        message?: string;
+      } = {
         answers: [ans1.trim(), ans2.trim()],
-      });
+      };
+
+      // tylko jeśli coś wpisał
+      if (extraMsg.trim()) {
+        payload.message = extraMsg.trim();
+      }
+
+      const data = await Api.post(`/api/claims/${id}`, payload);
       Alert.alert("Wysłano", data?.message || "Odpowiedź została zapisana.");
       setAns1("");
       setAns2("");
+      setExtraMsg(""); // 👈 NEW – czyścimy wiadomość
       close();
     } catch (e: any) {
       Alert.alert("Błąd", e.message || "Coś poszło nie tak");
@@ -185,8 +195,18 @@ const ItemDetailsModal = () => {
                 value={ans2}
                 onChangeText={setAns2}
                 placeholder="Twoja odpowiedź"
-                returnKeyType="send"
-                onSubmitEditing={submitAnswers}
+                returnKeyType="next"
+              />
+
+              {/* 👇 NOWE: luźna wiadomość */}
+              <Text style={styles.sectionTitle}>Dodatkowa wiadomość</Text>
+              <BottomSheetTextInput
+                style={[styles.input, styles.multiline]}
+                value={extraMsg}
+                onChangeText={setExtraMsg}
+                multiline
+                numberOfLines={4}
+                placeholder="Dodaj opcjonalny opis, by znalazca miał pewność, że to Twoje"
               />
 
               <Pressable
@@ -214,7 +234,7 @@ export default ItemDetailsModal;
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "transparent", // backdrop robi @gorhom
+    backgroundColor: "transparent",
     justifyContent: "flex-end",
   },
   container: { paddingHorizontal: 16, gap: 10 },
@@ -232,7 +252,6 @@ const styles = StyleSheet.create({
     maxWidth: "70%",
     textAlign: "center",
   },
-
   center: {
     paddingVertical: 40,
     alignItems: "center",
@@ -257,6 +276,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     backgroundColor: "#fff",
+  },
+  multiline: {
+    minHeight: 90,
+    textAlignVertical: "top",
   },
   btn: {
     marginTop: 12,
