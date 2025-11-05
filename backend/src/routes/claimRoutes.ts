@@ -4,6 +4,7 @@ import { claimCreateSchema } from "../../../shared/dist/schemas/ClaimSchema";
 import Claim from "../models/Claim";
 import FoundItem from "../models/FoundItem";
 import User from "../models/User";
+import { sendExpoPush } from "../utils/push";
 
 const router = Router();
 
@@ -160,6 +161,20 @@ router.post(
       ownerUnread: true,
       responderUnread: false,
     });
+
+    const owner = await User.findById(item.createdBy).lean();
+    if (owner?.pushToken) {
+      sendExpoPush(
+        owner.pushToken,
+        "Nowa odpowiedź na ogłoszenie",
+        `Ktoś odpowiedział na: ${item.title}`,
+        {
+          type: "claim:new",
+          itemId: String(item._id),
+          claimId: String(claim._id),
+        }
+      ).catch(console.error);
+    }
 
     res
       .status(201)

@@ -2,7 +2,7 @@ export type FoundItem = {
   _id?: string;
   title: string;
   description: string;
-  dateFound: string; // ISO
+  dateFound: string;
   foundLocation: {
     lat: number;
     lng: number;

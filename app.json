@@ -22,7 +22,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.lortmort.zgubioneznalezione"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -32,6 +33,12 @@
       "expo-secure-store",
       "expo-localization",
       "expo-asset"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2f2d8e6c-6ed5-4f2a-9d88-bc0bb4a1f3e1"
+      }
+    }
   }
 }
