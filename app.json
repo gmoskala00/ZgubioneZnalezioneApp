@@ -14,7 +14,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gmoskala.zgubioneznalezione",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "softwareKeyboardLayoutMode": "pan",
@@ -23,7 +27,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.lortmort.zgubioneznalezione"
+      "package": "com.gmoskala.zgubioneznalezione"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -37,7 +41,15 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "2f2d8e6c-6ed5-4f2a-9d88-bc0bb4a1f3e1"
+        "projectId": "0b740d48-7407-456f-a0c5-1d6974e67541"
+      }
+    },
+    "owner": "gmoskala",
+    "build": {
+      "development": {
+        "ios": {
+          "simulator": true
+        }
       }
     }
   }

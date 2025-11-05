@@ -1,10 +1,12 @@
 import * as Notifications from "expo-notifications";
-import Constants from "expo-constants";
+import * as Device from "expo-device";
 import { Platform } from "react-native";
 import { Api } from "./api";
 
 export async function registerForPushNotificationsAsync() {
-  if (!Constants.isDevice) {
+  //   console.log("Platform.OS =", Platform.OS);
+  //   console.log("Device.isDevice =", Device.isDevice);
+  if (!Device.isDevice) {
     console.log("Not a real device, no push token.");
     return;
   }
@@ -22,7 +24,7 @@ export async function registerForPushNotificationsAsync() {
   }
 
   const { data: token } = await Notifications.getExpoPushTokenAsync({
-    projectId: "2f2d8e6c-6ed5-4f2a-9d88-bc0bb4a1f3e1",
+    projectId: "0b740d48-7407-456f-a0c5-1d6974e67541",
   });
 
   console.log("EXPO TOKEN ==> ", token);
