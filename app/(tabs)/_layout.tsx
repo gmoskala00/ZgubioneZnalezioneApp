@@ -8,9 +8,9 @@ export default function TabsLayout() {
   const { logout, isAuthenticated } = useAuth();
 
   const handleLogout = () => {
-    Alert.alert("Log out", "Are you sure?", [
-      { text: "Canel", style: "cancel" },
-      { text: "Log Out", onPress: logout, style: "destructive" },
+    Alert.alert("Wyloguj się", "Czy jesteś pewien?", [
+      { text: "Anuluj", style: "cancel" },
+      { text: "Wyloguj", onPress: logout, style: "destructive" },
     ]);
   };
 
@@ -54,7 +54,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),
-          title: "Lost It!",
+          title: "Zgubione Znalezione",
           tabBarLabel: "Home",
         }}
       />

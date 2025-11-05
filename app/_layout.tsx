@@ -3,7 +3,7 @@ import "react-native-gesture-handler";
 
 import { useCallback, useEffect, useState } from "react";
 import { Stack } from "expo-router";
-import { View } from "react-native";
+import { View, Text, TextInput } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import * as Font from "expo-font";
 import { AuthContextProvider } from "../store/AuthContext";
@@ -43,6 +43,26 @@ export default function RootLayout() {
   if (!appIsReady) {
     return null;
   }
+
+  const RNText = Text as any;
+  const RNTextInput = TextInput as any;
+
+  if (RNText.defaultProps == null) {
+    RNText.defaultProps = {};
+  }
+  RNText.defaultProps.allowFontScaling = false;
+  RNText.defaultProps.style = [
+    RNText.defaultProps.style,
+    { fontFamily: "Nunito-Regular" },
+  ];
+
+  if (RNTextInput.defaultProps == null) {
+    RNTextInput.defaultProps = {};
+  }
+  RNTextInput.defaultProps.style = [
+    RNTextInput.defaultProps.style,
+    { fontFamily: "Nunito-Regular" },
+  ];
 
   return (
     <View style={{ flex: 1 }} onLayout={onLayoutRootView}>

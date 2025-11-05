@@ -12,12 +12,12 @@ import {
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
+import dayjs from "dayjs";
 import Button from "./Button";
 import LocationPicker from "./location-picker";
 import { foundItemCategories } from "../../models/FoundItem";
 import { CATEGORY_LABELS, CONTACT_METHOD_LABELS } from "../../i18n/labels";
 import { Api } from "../../services/api";
-import { formatDateTimePL } from "../../utils/date";
 
 type ContactMethod = "email" | "phone" | "other";
 
@@ -31,8 +31,9 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
 
   const [dateFound, setDateFound] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const [tempIosDate, setTempIosDate] = useState<Date>(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [tempAndroidDate, setTempAndroidDate] = useState<Date | null>(null);
 
   const [location, setLocation] = useState<{
     lat: number;
@@ -47,45 +48,15 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
   const [contactMethod, setContactMethod] = useState<ContactMethod>("email");
   const [contactDetails, setContactDetails] = useState("");
 
+  const clampToNow = (d: Date) => {
+    const now = new Date();
+    return d.getTime() > now.getTime() ? now : d;
+  };
+
   const toggleCategory = (c: string) =>
     setCategories((prev) =>
       prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]
     );
-
-  const openDateTimePicker = () => setShowDatePicker(true);
-
-  const onChangeDate = (e: DateTimePickerEvent, selected?: Date) => {
-    if (Platform.OS === "ios") {
-      if (selected) setDateFound(selected); // iOS zwraca pełny lokalny datetime
-      if (e.type !== "neutralButtonPressed") setShowDatePicker(false);
-      return;
-    }
-    if (e.type === "set" && selected) {
-      setTempAndroidDate(selected);
-      setShowDatePicker(false);
-      setShowTimePicker(true);
-    } else {
-      setShowDatePicker(false);
-      setTempAndroidDate(null);
-    }
-  };
-
-  const onChangeTime = (e: DateTimePickerEvent, selected?: Date) => {
-    if (e.type === "set" && selected && tempAndroidDate) {
-      const finalDate = new Date(
-        tempAndroidDate.getFullYear(),
-        tempAndroidDate.getMonth(),
-        tempAndroidDate.getDate(),
-        selected.getHours(),
-        selected.getMinutes(),
-        0,
-        0
-      );
-      setDateFound(finalDate);
-    }
-    setShowTimePicker(false);
-    setTempAndroidDate(null);
-  };
 
   const validate = () => {
     if (!title.trim() || !description.trim()) {
@@ -188,37 +159,130 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
 
       {/* Data i czas */}
       <Text style={styles.label}>Data i czas znalezienia *</Text>
-      <Button onPress={openDateTimePicker}>Wybierz datę i czas</Button>
+
+      {Platform.OS === "ios" ? (
+        <>
+          {!showDatePicker ? (
+            <Button
+              onPress={() => {
+                // otwieramy na aktualnie wybranej albo na teraz
+                setTempIosDate(dateFound ?? new Date());
+                setShowDatePicker(true);
+              }}
+            >
+              Wybierz datę i czas
+            </Button>
+          ) : (
+            <View style={{ gap: 8 }}>
+              <DateTimePicker
+                value={tempIosDate}
+                mode="datetime"
+                display="spinner"
+                locale="pl-PL" // 👈 polskie nazwy
+                onChange={(_, selected) => {
+                  if (!selected) return;
+                  // nie zapisujemy jeszcze do głównego stanu, tylko korygujemy
+                  const safe = clampToNow(selected);
+                  setTempIosDate(safe);
+                }}
+              />
+              <Pressable
+                onPress={() => {
+                  setDateFound(tempIosDate);
+                  setShowDatePicker(false);
+                }}
+                style={{ alignSelf: "flex-end", padding: 6 }}
+              >
+                <Text style={{ color: "#007AFF" }}>Gotowe</Text>
+              </Pressable>
+            </View>
+          )}
+        </>
+      ) : (
+        // ANDROID
+        <>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Button onPress={() => setShowDatePicker(true)}>
+              Wybierz datę
+            </Button>
+            <Button
+              onPress={() => {
+                if (!dateFound) {
+                  Alert.alert("Uwaga", "Najpierw wybierz datę.");
+                  return;
+                }
+                setShowTimePicker(true);
+              }}
+            >
+              Wybierz godzinę
+            </Button>
+          </View>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={dateFound ?? new Date()}
+              mode="date"
+              onChange={(e, selected) => {
+                if (e.type === "dismissed") {
+                  setShowDatePicker(false);
+                  return;
+                }
+                if (selected) {
+                  const safe = clampToNow(selected);
+                  // zachowaj starą godzinę jeśli była
+                  setDateFound((prev) => {
+                    const base = prev ?? safe;
+                    return new Date(
+                      safe.getFullYear(),
+                      safe.getMonth(),
+                      safe.getDate(),
+                      base.getHours(),
+                      base.getMinutes(),
+                      0,
+                      0
+                    );
+                  });
+                }
+                setShowDatePicker(false);
+              }}
+            />
+          )}
+
+          {showTimePicker && (
+            <DateTimePicker
+              value={dateFound ?? new Date()}
+              mode="time"
+              onChange={(e, selected) => {
+                if (e.type === "dismissed") {
+                  setShowTimePicker(false);
+                  return;
+                }
+                if (selected) {
+                  const safe = clampToNow(selected);
+                  setDateFound((prev) => {
+                    const base = prev ?? new Date();
+                    return new Date(
+                      base.getFullYear(),
+                      base.getMonth(),
+                      base.getDate(),
+                      safe.getHours(),
+                      safe.getMinutes(),
+                      0,
+                      0
+                    );
+                  });
+                }
+                setShowTimePicker(false);
+              }}
+            />
+          )}
+        </>
+      )}
+
       {dateFound && (
         <Text style={{ marginTop: 8, color: "#555" }}>
-          Wybrano: {formatDateTimePL(dateFound)}
+          Wybrano: {dayjs(dateFound).format("D MMMM YYYY HH:mm")}
         </Text>
-      )}
-
-      {/* iOS: datetime */}
-      {Platform.OS === "ios" && showDatePicker && (
-        <DateTimePicker
-          value={dateFound ?? new Date()}
-          mode="datetime"
-          display="spinner"
-          onChange={onChangeDate}
-        />
-      )}
-
-      {/* Android: data → czas */}
-      {Platform.OS === "android" && showDatePicker && (
-        <DateTimePicker
-          value={tempAndroidDate ?? dateFound ?? new Date()}
-          mode="date"
-          onChange={onChangeDate}
-        />
-      )}
-      {Platform.OS === "android" && showTimePicker && (
-        <DateTimePicker
-          value={dateFound ?? new Date()}
-          mode="time"
-          onChange={onChangeTime}
-        />
       )}
 
       {/* Lokalizacja */}

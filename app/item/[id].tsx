@@ -17,6 +17,7 @@ import BottomSheet, {
 } from "@gorhom/bottom-sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Api } from "../../services/api";
+import { CATEGORY_LABELS } from "../../i18n/labels";
 
 type FoundItem = {
   _id: string;
@@ -167,7 +168,10 @@ const ItemDetailsModal = () => {
                 <View style={styles.tagsWrap}>
                   {item.categories.map((c) => (
                     <View key={c} style={styles.tag}>
-                      <Text style={styles.tagText}>{c}</Text>
+                      <Text style={styles.tagText}>
+                        {CATEGORY_LABELS[c as keyof typeof CATEGORY_LABELS] ??
+                          c}
+                      </Text>
                     </View>
                   ))}
                 </View>
