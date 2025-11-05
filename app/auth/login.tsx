@@ -5,7 +5,6 @@ import LoadingOverlay from "../../components/UI/LoadingOverlay";
 import { useState } from "react";
 import Toast from "react-native-toast-message";
 import { Api } from "../../services/api";
-import { registerForPushNotificationsAsync } from "../../services/notifications";
 
 const LoginScreen = () => {
   const { authenticate } = useAuth();
@@ -16,7 +15,6 @@ const LoginScreen = () => {
       setIsAuthenticating(true);
       const { user, token } = await Api.login(credentials);
       authenticate(user._id, token);
-      registerForPushNotificationsAsync();
       Toast.show({ type: "success", text1: "Zalogowano pomyślnie" });
     } catch (error) {
       Toast.show({

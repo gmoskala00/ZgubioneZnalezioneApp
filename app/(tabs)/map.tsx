@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   topBar: {
     position: "absolute",
-    top: Platform.select({ ios: 24, android: 24, default: 24 }),
+    top: Platform.select({ ios: 74, android: 74, default: 74 }),
     left: 12,
     right: 12,
     zIndex: 30,
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   },
   popup: {
     position: "absolute",
-    top: Platform.select({ ios: 72, android: 72, default: 72 }),
+    top: Platform.select({ ios: 120, android: 120, default: 120 }),
     left: 12,
     right: 12,
     padding: 12,

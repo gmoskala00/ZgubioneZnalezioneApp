@@ -1,4 +1,3 @@
-// app/(tabs)/home.tsx
 import { StyleSheet, Text, View, Image } from "react-native";
 import { useEffect, useState } from "react";
 import { Asset } from "expo-asset";
@@ -7,11 +6,16 @@ import { GlobalStyles } from "../../constants/style";
 import ActionTile from "../../components/UI/ActionTile";
 import LoadingOverlay from "../../components/UI/LoadingOverlay";
 import { router } from "expo-router";
+import { registerForPushNotificationsAsync } from "../../services/notifications";
 
 const HomeScreen = () => {
   const { userData } = useAuth();
   const [imageReady, setImageReady] = useState(false);
   const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    registerForPushNotificationsAsync().catch(() => {});
+  }, []);
 
   useEffect(() => {
     let mounted = true;

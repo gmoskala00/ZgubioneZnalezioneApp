@@ -313,6 +313,19 @@ router.patch(
       await FoundItem.findByIdAndUpdate(claim.itemId, { status: "returned" });
     }
 
+    const responderUser = await User.findById(claim.responderId).lean();
+    if (responderUser?.pushToken) {
+      const body =
+        status === "approved"
+          ? "Twoja odpowiedź została zaakceptowana."
+          : status === "rejected"
+          ? "Twoja odpowiedź została odrzucona."
+          : status === "completed"
+          ? "Właściciel oznaczył ogłoszenie jako zakończone."
+          : "Aktualizacja zgłoszenia.";
+      sendExpoPush(responderUser.pushToken, "Aktualizacja odpowiedzi", body);
+    }
+
     res.json(claim);
   }
 );
