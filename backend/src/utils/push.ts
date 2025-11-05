@@ -1,11 +1,11 @@
-import fetch from "node-fetch";
-
 export async function sendExpoPush(
   expoToken: string,
   title: string,
   body: string,
   data?: any
 ) {
+  if (!expoToken.startsWith("ExponentPushToken")) return;
+
   await fetch("https://exp.host/--/api/v2/push/send", {
     method: "POST",
     headers: {
