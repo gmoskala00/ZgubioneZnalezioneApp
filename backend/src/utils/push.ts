@@ -4,13 +4,16 @@ export async function sendExpoPush(
   body: string,
   data?: any
 ) {
-  if (!expoToken.startsWith("ExponentPushToken")) return;
+  console.log("sendExpoPush ->", expoToken, title);
 
-  await fetch("https://exp.host/--/api/v2/push/send", {
+  if (!expoToken.startsWith("ExponentPushToken")) {
+    console.log("invalid expo token");
+    return;
+  }
+
+  const resp = await fetch("https://exp.host/--/api/v2/push/send", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       to: expoToken,
       sound: "default",
@@ -19,4 +22,7 @@ export async function sendExpoPush(
       data,
     }),
   });
+
+  const json = await resp.json();
+  console.log("expo response", json);
 }

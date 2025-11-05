@@ -1,54 +1,86 @@
-import { useRef, useState } from "react";
-import { View, StyleSheet, Text, TextInput, Button, Alert } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import {
+  View,
+  StyleSheet,
+  Text,
+  TextInput,
+  Button,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
 import MapView, {
   Marker,
   MapPressEvent,
   Region,
   UrlTile,
-  LongPressEvent,
 } from "react-native-maps";
+import * as Location from "expo-location";
+
+const FALLBACK_REGION: Region = {
+  latitude: 52.2297,
+  longitude: 21.0122,
+  latitudeDelta: 0.08,
+  longitudeDelta: 0.08,
+};
 
 type Props = {
   onLocationSelect?: (lat: number, lng: number, address?: string) => void;
-  initialRegion?: Region;
   height?: number;
 };
 
 export default function LocationPicker({
   onLocationSelect,
-  height = 240,
-  initialRegion = {
-    latitude: 52.2297,
-    longitude: 21.0122,
-    latitudeDelta: 0.08,
-    longitudeDelta: 0.08,
-  },
+  height = 280,
 }: Props) {
   const mapRef = useRef<MapView>(null);
+  const [region, setRegion] = useState<Region | null>(null);
   const [marker, setMarker] = useState<{ lat: number; lng: number } | null>(
     null
   );
-  const [address, setAddress] = useState(""); // tylko input do wyszukiwania
-  const [selectedAddress, setSelectedAddress] = useState<string | undefined>(); // wyświetlany pod mapą
+  const [address, setAddress] = useState("");
+  const [selectedAddress, setSelectedAddress] = useState<string | undefined>();
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") throw new Error("no_permission");
+
+        const loc = await Location.getCurrentPositionAsync({});
+        const userRegion: Region = {
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+          latitudeDelta: 0.04,
+          longitudeDelta: 0.04,
+        };
+
+        setRegion(userRegion);
+      } catch (e) {
+        console.warn("Brak lokalizacji, fallback do Warszawy", e);
+        setRegion(FALLBACK_REGION);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   const reverseGeocode = async (lat: number, lng: number) => {
     try {
       const resp = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`,
-        { headers: { "User-Agent": "ZgubioneZnalezione/1.0 (education)" } }
+        { headers: { "User-Agent": "ZgubioneZnalezione/1.0" } }
       );
       const data = await resp.json();
       const addr = data?.address;
-
       if (!addr) return data?.display_name as string | undefined;
-
       const parts = [
         addr.road,
         addr.house_number,
         addr.city || addr.town || addr.village,
         addr.postcode,
       ].filter(Boolean);
-
       return parts.join(", ");
     } catch {
       return undefined;
@@ -60,7 +92,7 @@ export default function LocationPicker({
       query
     )}&limit=1`;
     const resp = await fetch(url, {
-      headers: { "User-Agent": "ZgubioneZnalezione/1.0 (education)" },
+      headers: { "User-Agent": "ZgubioneZnalezione/1.0" },
     });
     const data = await resp.json();
     if (!Array.isArray(data) || data.length === 0) return null;
@@ -72,32 +104,14 @@ export default function LocationPicker({
     };
   };
 
-  const placeMarker = async (
-    lat: number,
-    lng: number,
-    updateAddress: boolean
-  ) => {
-    setMarker({ lat, lng });
-    if (updateAddress) {
-      // tylko dla kliknięcia na mapie robimy reverse geocode
-      const display = await reverseGeocode(lat, lng);
-      setSelectedAddress(display); // pokazujemy pod mapą
-      onLocationSelect?.(lat, lng, display);
-    } else {
-      // dla wyszukiwania używamy wpisanego adresu
-      setSelectedAddress(address || undefined);
-      onLocationSelect?.(lat, lng, address || undefined);
-    }
-  };
-
-  const handleMapPress = (e: MapPressEvent) => {
+  const handleMapPress = async (e: MapPressEvent) => {
     const { latitude, longitude } = e.nativeEvent.coordinate;
-    placeMarker(latitude, longitude, true);
-  };
-
-  const handleMapLongPress = (e: LongPressEvent) => {
-    const { latitude, longitude } = e.nativeEvent.coordinate;
-    placeMarker(latitude, longitude, true);
+    setMarker({ lat: latitude, lng: longitude });
+    setIsGeocoding(true);
+    const addr = await reverseGeocode(latitude, longitude);
+    setSelectedAddress(addr);
+    setIsGeocoding(false);
+    onLocationSelect?.(latitude, longitude, addr);
   };
 
   const handleSearch = async () => {
@@ -106,29 +120,39 @@ export default function LocationPicker({
       Alert.alert("Uwaga", "Wpisz adres (np. ulica, miasto).");
       return;
     }
-    try {
-      const res = await geocode(q);
-      if (!res) {
-        Alert.alert(
-          "Nie znaleziono",
-          "Spróbuj wpisać dokładniej (ulica, numer, miasto)."
-        );
-        return;
-      }
-      await placeMarker(res.lat, res.lng, false);
-      mapRef.current?.animateToRegion(
-        {
-          latitude: res.lat,
-          longitude: res.lng,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
-        },
-        300
-      );
-    } catch {
-      Alert.alert("Błąd geokodowania", "Sprawdź połączenie z internetem.");
+    const res = await geocode(q);
+    if (!res) {
+      Alert.alert("Nie znaleziono", "Spróbuj wpisać dokładniej.");
+      return;
     }
+    setMarker({ lat: res.lat, lng: res.lng });
+    setSelectedAddress(res.display);
+    onLocationSelect?.(res.lat, res.lng, res.display);
+    mapRef.current?.animateToRegion(
+      {
+        latitude: res.lat,
+        longitude: res.lng,
+        latitudeDelta: 0.03,
+        longitudeDelta: 0.03,
+      },
+      600
+    );
   };
+
+  if (loading || !region) {
+    return (
+      <View
+        style={{
+          height,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <ActivityIndicator size="large" />
+        <Text style={{ marginTop: 6 }}>Pobieranie lokalizacji...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.wrapper}>
@@ -139,10 +163,6 @@ export default function LocationPicker({
           placeholder="Wpisz adres (np. Królewska 10, Kraków)"
           value={address}
           onChangeText={setAddress}
-          autoCorrect={false}
-          autoCapitalize="sentences"
-          keyboardType="default"
-          inputMode="text"
           onSubmitEditing={handleSearch}
         />
         <Button title="Szukaj" onPress={handleSearch} />
@@ -152,9 +172,10 @@ export default function LocationPicker({
         <MapView
           ref={mapRef}
           style={{ width: "100%", height }}
-          initialRegion={initialRegion}
+          initialRegion={region}
+          showsUserLocation
+          showsMyLocationButton={false}
           onPress={handleMapPress}
-          onLongPress={handleMapLongPress}
         >
           <UrlTile
             urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -165,7 +186,10 @@ export default function LocationPicker({
           />
           {marker && (
             <Marker
-              coordinate={{ latitude: marker.lat, longitude: marker.lng }}
+              coordinate={{
+                latitude: marker.lat,
+                longitude: marker.lng,
+              }}
               title="Wybrana lokalizacja"
               description={selectedAddress || undefined}
             />
@@ -175,14 +199,11 @@ export default function LocationPicker({
 
       {marker && (
         <Text style={styles.coords}>
-          {selectedAddress
-            ? `📍 ${selectedAddress}`
-            : `Lat: ${marker.lat.toFixed(6)} | Lng: ${marker.lng.toFixed(6)}`}
+          {isGeocoding ? "📍" : selectedAddress ? `📍 ${selectedAddress}` : ""}
         </Text>
       )}
-      <Text style={{ fontSize: 10, color: "#666", marginTop: 4 }}>
-        © OpenStreetMap contributors
-      </Text>
+
+      <Text style={styles.osm}>© OpenStreetMap contributors</Text>
     </View>
   );
 }
@@ -200,4 +221,5 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   coords: { marginTop: 6, color: "#555" },
+  osm: { fontSize: 10, color: "#666", marginTop: 4 },
 });

@@ -164,6 +164,7 @@ router.post(
 
     const owner = await User.findById(item.createdBy).lean();
     if (owner?.pushToken) {
+      console.log("sending push to", owner.pushToken);
       sendExpoPush(
         owner.pushToken,
         "Nowa odpowiedź na ogłoszenie",

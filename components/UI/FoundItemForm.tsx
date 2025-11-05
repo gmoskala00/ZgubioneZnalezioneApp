@@ -9,9 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import dayjs from "dayjs";
 import Button from "./Button";
 import LocationPicker from "./location-picker";
@@ -21,18 +19,17 @@ import { Api } from "../../services/api";
 
 type ContactMethod = "email" | "phone" | "other";
 
-type FoundItemFormProps = {
+type Props = {
   onSuccess?: () => void;
 };
 
-const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
+const FoundItemForm: React.FC<Props> = ({ onSuccess }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
   const [dateFound, setDateFound] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
-
-  const [tempIosDate, setTempIosDate] = useState<Date>(new Date());
+  const [tempIosDate, setTempIosDate] = useState(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
 
   const [location, setLocation] = useState<{
@@ -44,7 +41,6 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
   const [categories, setCategories] = useState<string[]>([]);
   const [question1, setQuestion1] = useState("");
   const [question2, setQuestion2] = useState("");
-
   const [contactMethod, setContactMethod] = useState<ContactMethod>("email");
   const [contactDetails, setContactDetails] = useState("");
 
@@ -94,7 +90,7 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
     if (!validate()) return;
 
     try {
-      const body = {
+      await Api.createFoundItem({
         title: title.trim(),
         description: description.trim(),
         dateFound: dateFound!.toISOString(),
@@ -104,16 +100,12 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
           description: location?.address || "Zaznaczone na mapie",
         },
         categories,
-        securityQuestions: [question1.trim(), question2.trim()] as [
-          string,
-          string
-        ],
+        securityQuestions: [question1.trim(), question2.trim()],
         contactMethod,
         contactDetails: contactDetails.trim(),
-      };
+      });
 
-      await Api.createFoundItem(body);
-
+      Alert.alert("Sukces", "Przedmiot został dodany!");
       setTitle("");
       setDescription("");
       setDateFound(null);
@@ -124,14 +116,12 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
       setContactMethod("email");
       setContactDetails("");
 
-      Alert.alert("Sukces", "Przedmiot został dodany!");
       onSuccess?.();
     } catch (err: any) {
       if (err?.message === "Unauthorized") {
         Alert.alert("Sesja wygasła", "Zaloguj się ponownie.");
         return;
       }
-      console.error(err);
       Alert.alert("Błąd", err?.message || "Coś poszło nie tak");
     }
   };
@@ -159,13 +149,11 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
 
       {/* Data i czas */}
       <Text style={styles.label}>Data i czas znalezienia *</Text>
-
       {Platform.OS === "ios" ? (
         <>
           {!showDatePicker ? (
             <Button
               onPress={() => {
-                // otwieramy na aktualnie wybranej albo na teraz
                 setTempIosDate(dateFound ?? new Date());
                 setShowDatePicker(true);
               }}
@@ -178,12 +166,10 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
                 value={tempIosDate}
                 mode="datetime"
                 display="spinner"
-                locale="pl-PL" // 👈 polskie nazwy
+                locale="pl-PL"
                 onChange={(_, selected) => {
                   if (!selected) return;
-                  // nie zapisujemy jeszcze do głównego stanu, tylko korygujemy
-                  const safe = clampToNow(selected);
-                  setTempIosDate(safe);
+                  setTempIosDate(clampToNow(selected));
                 }}
               />
               <Pressable
@@ -199,7 +185,6 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
           )}
         </>
       ) : (
-        // ANDROID
         <>
           <View style={{ flexDirection: "row", gap: 8 }}>
             <Button onPress={() => setShowDatePicker(true)}>
@@ -285,11 +270,10 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
         </Text>
       )}
 
-      {/* Lokalizacja */}
       <LocationPicker
-        onLocationSelect={(lat: number, lng: number, addr?: string) => {
-          setLocation({ lat, lng, address: addr });
-        }}
+        onLocationSelect={(lat, lng, addr) =>
+          setLocation({ lat, lng, address: addr })
+        }
       />
 
       {/* Kategorie */}

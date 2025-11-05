@@ -76,9 +76,10 @@ router.get("/:id", async (req: Request, res: Response): Promise<any> => {
 router.post(
   "/push-token",
   verifyToken,
-  async (req: AuthenticatedRequest, res) => {
+  async (req: AuthenticatedRequest, res): Promise<any> => {
     const { token } = req.body as { token?: string };
-    if (!token) res.status(400).json({ message: "Token required" });
+    console.log("Saving push token for user", req.user!.userId, token);
+    if (!token) return res.status(400).json({ message: "Token required" });
 
     await User.findByIdAndUpdate(req.user!.userId, { pushToken: token });
     res.json({ ok: true });
