@@ -44,13 +44,6 @@
         "projectId": "0b740d48-7407-456f-a0c5-1d6974e67541"
       }
     },
-    "owner": "gmoskala",
-    "build": {
-      "development": {
-        "ios": {
-          "simulator": true
-        }
-      }
-    }
+    "owner": "gmoskala"
   }
 }
