@@ -1,4 +1,3 @@
-// app/(tabs)/home.tsx
 import { StyleSheet, Text, View, Image } from "react-native";
 import { useEffect, useState } from "react";
 import { Asset } from "expo-asset";

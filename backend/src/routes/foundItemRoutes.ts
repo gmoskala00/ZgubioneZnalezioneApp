@@ -2,16 +2,9 @@ import { Router, Request, Response } from "express";
 import FoundItem from "../models/FoundItem";
 import { foundItemSchema } from "../../../shared/dist/schemas/FoundItemSchema";
 import { verifyToken, AuthenticatedRequest } from "../middleware/verifyToken";
+import { fold } from "../utils/fold";
 
 const router = Router();
-
-function fold(s: string) {
-  return s
-    ?.normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase()
-    .trim();
-}
 
 router.post(
   "/",

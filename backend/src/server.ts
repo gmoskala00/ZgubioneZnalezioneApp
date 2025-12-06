@@ -17,6 +17,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/found-items", foundItemRoutes);
 app.use("/api/claims", claimRoutes);
+app.use("/utils/fold");
 
 app.get("/", (_req, res) => {
   res.send("API LIVE");

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../../store/AuthContext";
 import {
   Alert,
   Platform,
@@ -9,9 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import dayjs from "dayjs";
 import Button from "./Button";
 import LocationPicker from "./location-picker";
@@ -26,6 +25,8 @@ type FoundItemFormProps = {
 };
 
 const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
+  const { userData } = useAuth();
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
@@ -47,6 +48,16 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
 
   const [contactMethod, setContactMethod] = useState<ContactMethod>("email");
   const [contactDetails, setContactDetails] = useState("");
+
+  useEffect(() => {
+    if (contactMethod === "email") {
+      setContactDetails(userData?.email || "");
+    } else if (contactMethod === "phone") {
+      setContactDetails(userData?.phoneNumber || "");
+    } else {
+      setContactDetails("");
+    }
+  }, [contactMethod, userData]);
 
   const clampToNow = (d: Date) => {
     const now = new Date();
@@ -137,8 +148,10 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {/* Tytuł */}
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={styles.label}>Tytuł *</Text>
       <TextInput
         style={styles.input}
@@ -147,7 +160,6 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
         placeholder="Np. Klucze"
       />
 
-      {/* Opis */}
       <Text style={styles.label}>Opis *</Text>
       <TextInput
         style={[styles.input, { minHeight: 80 }]}
@@ -157,7 +169,6 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
         multiline
       />
 
-      {/* Data i czas */}
       <Text style={styles.label}>Data i czas znalezienia *</Text>
 
       {Platform.OS === "ios" ? (
@@ -165,7 +176,6 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
           {!showDatePicker ? (
             <Button
               onPress={() => {
-                // otwieramy na aktualnie wybranej albo na teraz
                 setTempIosDate(dateFound ?? new Date());
                 setShowDatePicker(true);
               }}
@@ -178,10 +188,9 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
                 value={tempIosDate}
                 mode="datetime"
                 display="spinner"
-                locale="pl-PL" // 👈 polskie nazwy
+                locale="pl-PL"
                 onChange={(_, selected) => {
                   if (!selected) return;
-                  // nie zapisujemy jeszcze do głównego stanu, tylko korygujemy
                   const safe = clampToNow(selected);
                   setTempIosDate(safe);
                 }}
@@ -199,7 +208,6 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
           )}
         </>
       ) : (
-        // ANDROID
         <>
           <View style={{ flexDirection: "row", gap: 8 }}>
             <Button onPress={() => setShowDatePicker(true)}>
@@ -229,7 +237,6 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
                 }
                 if (selected) {
                   const safe = clampToNow(selected);
-                  // zachowaj starą godzinę jeśli była
                   setDateFound((prev) => {
                     const base = prev ?? safe;
                     return new Date(
@@ -285,14 +292,12 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
         </Text>
       )}
 
-      {/* Lokalizacja */}
       <LocationPicker
         onLocationSelect={(lat: number, lng: number, addr?: string) => {
           setLocation({ lat, lng, address: addr });
         }}
       />
 
-      {/* Kategorie */}
       <Text style={[styles.label, { marginTop: 8 }]}>Kategorie *</Text>
       <View style={styles.chipsWrap}>
         {foundItemCategories.map((c) => {
@@ -311,7 +316,6 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
         })}
       </View>
 
-      {/* Pytania weryfikacyjne */}
       <Text style={styles.label}>Pytanie 1 *</Text>
       <TextInput
         style={styles.input}
@@ -327,7 +331,6 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
         placeholder="Np. ile kluczy było na kółku?"
       />
 
-      {/* Kontakt */}
       <Text style={[styles.label, { marginTop: 8 }]}>Metoda kontaktu</Text>
       <View style={styles.segment}>
         {(["email", "phone", "other"] as const).map((m) => (

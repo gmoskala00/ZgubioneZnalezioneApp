@@ -24,7 +24,11 @@ const claimSchema = new Schema<IClaim>(
     itemId: { type: Schema.Types.ObjectId, ref: "FoundItem", required: true },
     ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     responderId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    answers: { type: [String], required: true },
+    answers: {
+      type: [String],
+      required: true,
+      validate: [(v: string[]) => v.length === 2, "Exactly two answers"],
+    },
     message: { type: String },
     status: {
       type: String,

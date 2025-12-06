@@ -26,12 +26,9 @@ export type Claim = {
   responderUnread?: boolean;
   contactForOwner?: { email?: string; phone?: string };
   contactForResponder?: {
-    email?: string;
-    phone?: string;
     method?: "email" | "phone" | "other";
-    detailsFromForm?: string;
+    details?: string;
   };
-  ownerContactOther?: string;
 };
 
 export type InboxGroup = {

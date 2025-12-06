@@ -8,7 +8,10 @@ import {
 } from "../../../shared/dist/schemas/AuthSchema";
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is not set");
+}
 
 router.post("/register", async (req: Request, res: Response): Promise<any> => {
   const credentials = req.body;

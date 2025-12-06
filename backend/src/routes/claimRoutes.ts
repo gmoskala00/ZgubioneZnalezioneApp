@@ -47,61 +47,23 @@ async function enrichApprovedContactsForSent(claims: any[]) {
 
   const items = await FoundItem.find(
     { _id: { $in: itemIds } },
-    { createdBy: 1, contactMethod: 1, contactDetails: 1 }
+    { contactMethod: 1, contactDetails: 1 }
   ).lean();
 
   const itemById = Object.fromEntries(
     items.map((i: any) => [String(i._id), i])
   );
-  const ownerIds = Array.from(
-    new Set(items.map((i: any) => String(i.createdBy)))
-  );
-
-  const owners = await User.find(
-    { _id: { $in: ownerIds } },
-    { email: 1, phoneNumber: 1 }
-  ).lean();
-  const ownerById = Object.fromEntries(
-    owners.map((u: any) => [String(u._id), u])
-  );
 
   for (const c of claims) {
     if (c.status !== "approved") continue;
+
     const it = itemById[String(c.itemId)];
-    const owner = ownerById[String(it?.createdBy)];
     const method = it?.contactMethod as "email" | "phone" | "other" | undefined;
     const details = (it?.contactDetails || "").trim();
 
-    let showPhone: string | undefined;
-    let showEmail: string | undefined;
-
-    if (method === "phone") {
-      const a = normPhone(details);
-      const b = normPhone(owner?.phoneNumber);
-      if (a) {
-        if (a === b) {
-          showPhone = details;
-        } else {
-          showPhone = details;
-        }
-      } else if (owner?.phoneNumber) {
-        showPhone = owner.phoneNumber;
-      }
-      showEmail = owner?.email;
-    } else if (method === "email") {
-      showEmail = details || owner?.email;
-      showPhone = owner?.phoneNumber;
-    } else {
-      showEmail = owner?.email;
-      showPhone = owner?.phoneNumber;
-      c.ownerContactOther = details;
-    }
-
     c.contactForResponder = {
-      email: showEmail,
-      phone: showPhone,
-      method: method || "other",
-      detailsFromForm: details || undefined,
+      method: method ?? "other",
+      details: details || undefined,
     };
   }
 

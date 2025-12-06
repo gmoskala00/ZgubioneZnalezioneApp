@@ -28,8 +28,8 @@ export default function LocationPicker({
   const [marker, setMarker] = useState<{ lat: number; lng: number } | null>(
     null
   );
-  const [address, setAddress] = useState(""); // tylko input do wyszukiwania
-  const [selectedAddress, setSelectedAddress] = useState<string | undefined>(); // wyświetlany pod mapą
+  const [address, setAddress] = useState("");
+  const [selectedAddress, setSelectedAddress] = useState<string | undefined>();
 
   const reverseGeocode = async (lat: number, lng: number) => {
     try {
@@ -79,12 +79,10 @@ export default function LocationPicker({
   ) => {
     setMarker({ lat, lng });
     if (updateAddress) {
-      // tylko dla kliknięcia na mapie robimy reverse geocode
       const display = await reverseGeocode(lat, lng);
-      setSelectedAddress(display); // pokazujemy pod mapą
+      setSelectedAddress(display);
       onLocationSelect?.(lat, lng, display);
     } else {
-      // dla wyszukiwania używamy wpisanego adresu
       setSelectedAddress(address || undefined);
       onLocationSelect?.(lat, lng, address || undefined);
     }

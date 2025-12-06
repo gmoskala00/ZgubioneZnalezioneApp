@@ -1,124 +1,36 @@
-import { useEffect, useState, useRef } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
-  ActivityIndicator,
   StyleSheet,
-  Pressable,
   TextInput,
+  Pressable,
   Platform,
   Keyboard,
+  ActivityIndicator,
 } from "react-native";
-import MapView, { Marker, Callout, Region } from "react-native-maps";
-import dayjs from "dayjs";
-import "dayjs/locale/pl";
-import { router } from "expo-router";
-import * as Location from "expo-location";
-import { API_URL } from "../../constants/api";
+import { useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+
+import MapWithPins, { MapItem } from "../../components/UI/MapWithPins";
+import { Api } from "../../services/api";
 import { foundItemCategories } from "../../models/FoundItem";
 import { CATEGORY_LABELS } from "../../i18n/labels";
 import { GlobalStyles } from "../../constants/style";
 
-type FoundItem = {
-  _id: string;
-  title: string;
-  description: string;
-  dateFound: string;
-  foundLocation: { lat: number; lng: number; description: string };
-  categories?: string[];
-  status?: "active" | "expired" | "returned";
-};
-
 const MapScreen = () => {
-  const [items, setItems] = useState<FoundItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const mapRef = useRef<MapView>(null);
-  const [region, setRegion] = useState<Region | null>(null);
-
-  // FILTRY
   const [query, setQuery] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [catsDraft, setCatsDraft] = useState<string[]>([]);
   const [catsApplied, setCatsApplied] = useState<string[]>([]);
+  const [refreshToken, setRefreshToken] = useState(0);
+  const [loadingPins, setLoadingPins] = useState(false);
 
-  useEffect(() => {
-    const fetchEverything = async () => {
-      setLoading(true);
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status === "granted") {
-          const current = await Location.getCurrentPositionAsync({});
-          const userRegion = {
-            latitude: current.coords.latitude,
-            longitude: current.coords.longitude,
-            latitudeDelta: 0.06,
-            longitudeDelta: 0.06,
-          };
-          setRegion(userRegion);
-          mapRef.current?.animateToRegion(userRegion, 1000);
-        } else {
-          setRegion({
-            latitude: 52.2297,
-            longitude: 21.0122,
-            latitudeDelta: 0.06,
-            longitudeDelta: 0.06,
-          });
-        }
-
-        const res = await fetch(`${API_URL}/api/found-items`);
-        const data: FoundItem[] = await res.json();
-        setItems(data);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchEverything();
-  }, []);
-
-  const filtered = items.filter((it) => {
-    if (it.status === "returned" || it.status === "expired") return false;
-
-    if (query.trim()) {
-      const q = query.trim().toLowerCase();
-      if (!it.title.toLowerCase().includes(q)) return false;
-    }
-
-    if (catsApplied.length > 0) {
-      const itemCats = it.categories ?? [];
-      const hasAny = itemCats.some((c) => catsApplied.includes(c));
-      if (!hasAny) return false;
-    }
-
-    return true;
-  });
-
-  if (loading || !region) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" />
-        <Text style={{ marginTop: 10 }}>Ładowanie...</Text>
-      </View>
-    );
-  }
-
-  const recenter = async () => {
-    try {
-      const current = await Location.getCurrentPositionAsync({});
-      const newRegion = {
-        latitude: current.coords.latitude,
-        longitude: current.coords.longitude,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05,
-      };
-      mapRef.current?.animateToRegion(newRegion, 1000);
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  useFocusEffect(
+    useCallback(() => {
+      setRefreshToken((x) => x + 1);
+    }, [])
+  );
 
   const toggleFilters = () => {
     if (filtersOpen) {
@@ -151,15 +63,32 @@ const MapScreen = () => {
 
   const activeCount = (query.trim() ? 1 : 0) + (catsApplied.length > 0 ? 1 : 0);
 
-  // kliknięcie w mapę / tło – zamknij popup i klawiaturę
-  const handleMapPress = () => {
-    if (filtersOpen) setFiltersOpen(false);
+  const fetchByBBox = useCallback(
+    async (n: number, e: number, s: number, w: number): Promise<MapItem[]> => {
+      const res = await Api.listFoundItemsBBox(n, e, s, w, 300, {
+        q: query,
+        categories: catsApplied,
+      });
+
+      return res.items.map((it) => ({
+        _id: it._id!,
+        title: it.title,
+        description: it.description,
+        foundLocation: it.foundLocation,
+        categories: it.categories,
+        dateFound: it.dateFound,
+      }));
+    },
+    [query, catsApplied]
+  );
+
+  const closeFilters = () => {
+    setFiltersOpen(false);
     Keyboard.dismiss();
   };
 
   return (
     <View style={{ flex: 1 }}>
-      {/* top bar */}
       <View style={styles.topBar}>
         <View style={styles.searchBox}>
           <Ionicons
@@ -207,15 +136,8 @@ const MapScreen = () => {
         </Pressable>
       </View>
 
-      {/* lekki backdrop żeby klik zamykał popup */}
       {filtersOpen && (
-        <Pressable
-          onPress={() => {
-            setFiltersOpen(false);
-            Keyboard.dismiss();
-          }}
-          style={styles.backdrop}
-        />
+        <Pressable onPress={closeFilters} style={styles.backdrop} />
       )}
 
       {filtersOpen && (
@@ -249,10 +171,7 @@ const MapScreen = () => {
               </Text>
             </Pressable>
             <Pressable
-              onPress={() => {
-                setFiltersOpen(false);
-                Keyboard.dismiss();
-              }}
+              onPress={closeFilters}
               style={[styles.footerBtn, styles.footerBtnGhost]}
             >
               <Text style={[styles.footerBtnText, styles.footerBtnGhostText]}>
@@ -266,62 +185,18 @@ const MapScreen = () => {
         </View>
       )}
 
-      <MapView
-        ref={mapRef}
-        style={{ flex: 1 }}
-        initialRegion={region}
-        showsUserLocation
-        followsUserLocation={false}
-        showsMyLocationButton={false}
-        onPress={handleMapPress}
-      >
-        {filtered.map((it) => (
-          <Marker
-            key={it._id}
-            coordinate={{
-              latitude: it.foundLocation.lat,
-              longitude: it.foundLocation.lng,
-            }}
-            title={it.title}
-            description={it.foundLocation.description}
-            onCalloutPress={() => router.push(`/item/${it._id}`)}
-          >
-            <Callout tooltip={false}>
-              <View style={styles.callout}>
-                <Text style={styles.title} numberOfLines={1}>
-                  {it.title}
-                </Text>
-                <Text style={styles.desc} numberOfLines={2}>
-                  {it.description}
-                </Text>
-                <Text style={styles.meta}>
-                  Znaleziono:{" "}
-                  {dayjs(it.dateFound)
-                    .locale("pl")
-                    .format("D MMMM YYYY, HH:mm")}
-                </Text>
-                <View style={[styles.btn, { marginTop: 10 }]}>
-                  <Text style={styles.btnText}>Szczegóły</Text>
-                </View>
-              </View>
-            </Callout>
-          </Marker>
-        ))}
-      </MapView>
-
-      <Pressable
-        onPress={recenter}
-        style={({ pressed }) => [
-          styles.myLocationBtn,
-          pressed && { opacity: 0.7 },
-        ]}
-      >
-        <Text style={{ fontSize: 22 }}>📍</Text>
-      </Pressable>
-
-      <View style={styles.osm}>
-        <Text style={styles.osmText}>© OpenStreetMap contributors</Text>
-      </View>
+      <MapWithPins
+        fetchByBBox={fetchByBBox}
+        refreshToken={refreshToken}
+        idleMs={350}
+        onLoadingChange={setLoadingPins}
+      />
+      {loadingPins && (
+        <View style={styles.mapLoading}>
+          <ActivityIndicator size="small" />
+          <Text style={styles.mapLoadingText}>Aktualizuję ogłoszenia...</Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -329,10 +204,9 @@ const MapScreen = () => {
 export default MapScreen;
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
   topBar: {
     position: "absolute",
-    top: Platform.select({ ios: 24, android: 24, default: 24 }),
+    top: Platform.select({ ios: 72, android: 72, default: 72 }),
     left: 12,
     right: 12,
     zIndex: 30,
@@ -439,44 +313,20 @@ const styles = StyleSheet.create({
   footerBtnGhostText: {
     color: GlobalStyles.colors.textPrimary,
   },
-  callout: {
-    width: 260,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: "#fff",
-    elevation: 8,
-  },
-  title: { fontWeight: "bold", fontSize: 16, marginBottom: 4 },
-  desc: { color: "#444" },
-  meta: { marginTop: 6, fontSize: 12, color: "#666" },
-  btn: {
-    marginTop: 10,
-    backgroundColor: "#4CAF50",
-    paddingVertical: 8,
-    borderRadius: 8,
+  mapLoading: {
+    position: "absolute",
+    top: Platform.select({ ios: 120, android: 100, default: 100 }),
+    left: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    flexDirection: "row",
     alignItems: "center",
+    gap: 8,
   },
-  btnText: { color: "#fff", fontWeight: "bold" },
-  myLocationBtn: {
-    position: "absolute",
-    bottom: 25,
-    right: 15,
-    backgroundColor: "#fff",
-    padding: 10,
-    borderRadius: 50,
-    elevation: 8,
-  },
-  osm: {
-    position: "absolute",
-    bottom: 8,
-    right: 8,
-    backgroundColor: "transparent",
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  osmText: {
-    fontSize: 10,
-    color: "#555",
+  mapLoadingText: {
+    fontSize: 12,
+    color: "#333",
   },
 });

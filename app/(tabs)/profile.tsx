@@ -8,16 +8,15 @@ import {
   Pressable,
   ScrollView,
 } from "react-native";
+import { useFocusEffect } from "expo-router";
 import Toast from "react-native-toast-message";
 import { Api } from "../../services/api";
 import { GlobalStyles } from "../../constants/style";
-import type { UserData } from "../../models/auth";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^\+?\d{9,15}$/;
 
 const ProfileScreen = () => {
-  const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -34,7 +33,6 @@ const ProfileScreen = () => {
   const load = useCallback(async () => {
     try {
       const me = await Api.getMe();
-      setUser(me);
       setUsername(me.username);
       setEmail(me.email);
       setPhoneNumber(me.phoneNumber ?? "");
@@ -49,9 +47,11 @@ const ProfileScreen = () => {
     }
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   const validate = () => {
     const next: typeof errors = {};
@@ -97,14 +97,12 @@ const ProfileScreen = () => {
         email: email.trim(),
         phoneNumber: phoneNumber.trim(),
       });
-      setUser(updated);
       Toast.show({
         type: "success",
         text1: "Zapisano",
         text2: "Twoje dane zostały zaktualizowane.",
       });
     } catch (e: any) {
-      // spróbuj wyciągnąć sensowny tekst
       const msg =
         e?.message && typeof e.message === "string"
           ? e.message
@@ -136,8 +134,7 @@ const ProfileScreen = () => {
     >
       <Text style={styles.screenTitle}>Mój profil</Text>
       <Text style={styles.screenSub}>
-        Zarządzaj swoimi danymi kontaktowymi. Dane kontaktowe są widoczne tylko,
-        gdy ktoś odpowie na Twoje ogłoszenie.
+        Zarządzaj swoimi danymi kontaktowymi.
       </Text>
 
       <View style={styles.card}>

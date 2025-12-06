@@ -90,7 +90,6 @@ const ItemDetailsModal = () => {
         answers: [ans1.trim(), ans2.trim()],
       };
 
-      // tylko jeśli coś wpisał
       if (extraMsg.trim()) {
         payload.message = extraMsg.trim();
       }
@@ -99,7 +98,7 @@ const ItemDetailsModal = () => {
       Alert.alert("Wysłano", data?.message || "Odpowiedź została zapisana.");
       setAns1("");
       setAns2("");
-      setExtraMsg(""); // 👈 NEW – czyścimy wiadomość
+      setExtraMsg("");
       close();
     } catch (e: any) {
       Alert.alert("Błąd", e.message || "Coś poszło nie tak");
@@ -202,7 +201,6 @@ const ItemDetailsModal = () => {
                 returnKeyType="next"
               />
 
-              {/* 👇 NOWE: luźna wiadomość */}
               <Text style={styles.sectionTitle}>Dodatkowa wiadomość</Text>
               <BottomSheetTextInput
                 style={[styles.input, styles.multiline]}

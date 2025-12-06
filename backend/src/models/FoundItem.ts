@@ -1,5 +1,6 @@
 import { Schema, model, Document } from "mongoose";
-import { FOUND_ITEM_CATEGORIES } from "../../../shared/dist/constants/categories"; // 👈 DIST
+import { FOUND_ITEM_CATEGORIES } from "../../../shared/dist/constants/categories";
+import { fold } from "../utils/fold";
 
 export interface IFoundItem extends Document {
   title: string;
@@ -20,7 +21,7 @@ const foundItemSchema = new Schema<IFoundItem>(
     title: { type: String, required: true, trim: true },
     titleFolded: { type: String, index: true },
     description: { type: String, required: true },
-    dateFound: { type: Date, required: true, default: Date.now },
+    dateFound: { type: Date, required: true },
     foundLocation: {
       lat: { type: Number, required: true },
       lng: { type: Number, required: true },
@@ -51,14 +52,6 @@ const foundItemSchema = new Schema<IFoundItem>(
   },
   { timestamps: true }
 );
-
-function fold(s: string) {
-  return s
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase()
-    .trim();
-}
 
 foundItemSchema.index({
   "foundLocation.lat": 1,

@@ -34,6 +34,9 @@ export default function TabsLayout() {
               />
             </TouchableOpacity>
           ),
+        headerTitleContainerStyle: {
+          paddingBottom: 8,
+        },
         headerTitleStyle: {
           fontSize: 24,
           fontWeight: "bold",
@@ -55,7 +58,7 @@ export default function TabsLayout() {
             <Ionicons name="home-outline" size={size} color={color} />
           ),
           title: "Zgubione Znalezione",
-          tabBarLabel: "Home",
+          tabBarLabel: "Start",
         }}
       />
       <Tabs.Screen
@@ -64,7 +67,8 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="map-outline" size={size} color={color} />
           ),
-          title: "Map",
+          headerShown: false,
+          title: "Mapa",
         }}
       />
       <Tabs.Screen
@@ -73,20 +77,18 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="add-circle-outline" size={size} color={color} />
           ),
-          title: "Add",
+          title: "Zgubione Znalezione",
+          tabBarLabel: "Dodaj",
         }}
       />
       <Tabs.Screen
         name="inbox"
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Ionicons
-              name="chatbubble-ellipses-outline"
-              size={size}
-              color={color}
-            />
+            <Ionicons name="folder-outline" size={size} color={color} />
           ),
-          title: "Inbox",
+          title: "Zgubione Znalezione",
+          tabBarLabel: "Skrzynka",
         }}
       />
       <Tabs.Screen
@@ -95,7 +97,8 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),
-          title: "Profile",
+          title: "Zgubione Znalezione",
+          tabBarLabel: "Profil",
         }}
       />
     </Tabs>

@@ -23,6 +23,7 @@ export const ClaimCard: React.FC<Props> = ({
 }) => {
   const renderContacts = (c: Claim) => {
     if (c.status !== "approved") return null;
+
     return (
       <View style={styles.contactBox}>
         {mode === "mine" ? (
@@ -46,25 +47,14 @@ export const ClaimCard: React.FC<Props> = ({
             <Text style={styles.contactTitle}>
               Dane kontaktowe właściciela:
             </Text>
-            {!!c.contactForResponder?.detailsFromForm &&
-              c.contactForResponder?.method === "other" && (
-                <Text style={styles.contactLine}>
-                  Kontakt (formularz): {c.contactForResponder.detailsFromForm}
-                </Text>
-              )}
-            {!!c.contactForResponder?.email && (
+            {c.contactForResponder?.details && (
               <Text style={styles.contactLine}>
-                E-mail: {c.contactForResponder.email}
-              </Text>
-            )}
-            {!!c.contactForResponder?.phone && (
-              <Text style={styles.contactLine}>
-                Telefon: {c.contactForResponder.phone}
-              </Text>
-            )}
-            {!!c.ownerContactOther && (
-              <Text style={styles.contactLine}>
-                Inny kontakt: {c.ownerContactOther}
+                {c.contactForResponder.method === "phone"
+                  ? "Telefon"
+                  : c.contactForResponder.method === "email"
+                  ? "E-mail"
+                  : "Kontakt"}
+                : {` ${c.contactForResponder.details}`}
               </Text>
             )}
           </>

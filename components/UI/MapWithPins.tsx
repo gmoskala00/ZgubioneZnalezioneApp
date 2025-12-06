@@ -7,12 +7,7 @@ import {
   Text,
   StyleSheet,
 } from "react-native";
-import MapView, {
-  Marker,
-  Region,
-  Callout,
-  MapPressEvent,
-} from "react-native-maps";
+import MapView, { Marker, Region, Callout } from "react-native-maps";
 import * as Location from "expo-location";
 import dayjs from "dayjs";
 import "dayjs/locale/pl";
@@ -25,7 +20,7 @@ export type MapItem = {
   description?: string;
   foundLocation: { lat: number; lng: number; description?: string };
   categories?: string[];
-  dateFound?: string; // 👈 dodane, bo z BBOX to przychodzi
+  dateFound?: string;
 };
 
 type Props = {
@@ -63,22 +58,48 @@ export default function MapWithPins({
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestReqId = useRef(0);
 
-  // ostatnia znana pozycja usera – pod recenter
   const userLocationRef = useRef<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     (async () => {
-      if (regionRef.current) {
-        setReady(true);
-        return;
-      }
+      try {
+        if (regionRef.current) {
+          setReady(true);
+          return;
+        }
 
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Brak uprawnień do lokalizacji",
-          "Użyjemy pozycji domyślnej."
-        );
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert(
+            "Brak uprawnień do lokalizacji",
+            "Użyjemy pozycji domyślnej."
+          );
+          const fallback: Region = {
+            latitude: 52.237049,
+            longitude: 21.017532,
+            latitudeDelta: 0.08,
+            longitudeDelta: 0.08,
+          };
+          regionRef.current = fallback;
+          setReady(true);
+          return;
+        }
+
+        const loc = await Location.getCurrentPositionAsync({});
+        userLocationRef.current = {
+          lat: loc.coords.latitude,
+          lng: loc.coords.longitude,
+        };
+        const userRegion: Region = {
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+          latitudeDelta: 0.08,
+          longitudeDelta: 0.08,
+        };
+        regionRef.current = userRegion;
+        setReady(true);
+      } catch (e) {
+        console.warn("Location unavailable, using fallback region:", e);
         const fallback: Region = {
           latitude: 52.237049,
           longitude: 21.017532,
@@ -87,21 +108,7 @@ export default function MapWithPins({
         };
         regionRef.current = fallback;
         setReady(true);
-        return;
       }
-      const loc = await Location.getCurrentPositionAsync({});
-      userLocationRef.current = {
-        lat: loc.coords.latitude,
-        lng: loc.coords.longitude,
-      };
-      const userRegion: Region = {
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-        latitudeDelta: 0.08,
-        longitudeDelta: 0.08,
-      };
-      regionRef.current = userRegion;
-      setReady(true);
     })();
   }, []);
 
@@ -154,7 +161,6 @@ export default function MapWithPins({
 
   useEffect(() => {
     if (!ready || !regionRef.current) return;
-    // gdy zmieniła się funkcja fetchByBBox (np. filtr) – pobierz od nowa
     doFetch(regionRef.current, true, true);
   }, [fetchByBBox]);
 
@@ -179,7 +185,6 @@ export default function MapWithPins({
 
   const recenterToUser = async () => {
     try {
-      // spróbuj odświeżyć usera, jeśli mamy permisje
       const { status } = await Location.getForegroundPermissionsAsync();
       if (status === "granted") {
         const loc = await Location.getCurrentPositionAsync({});
@@ -221,7 +226,7 @@ export default function MapWithPins({
         onRegionChangeComplete={onRegionChangeComplete}
         showsUserLocation
         followsUserLocation={false}
-        showsMyLocationButton={false} // robimy swój
+        showsMyLocationButton={false}
       >
         {items.map((it) => (
           <Marker
@@ -263,7 +268,6 @@ export default function MapWithPins({
         ))}
       </MapView>
 
-      {/* przycisk "moja lokalizacja" */}
       <Pressable
         onPress={recenterToUser}
         style={({ pressed }) => [
@@ -274,7 +278,6 @@ export default function MapWithPins({
         <Text style={{ fontSize: 22 }}>📍</Text>
       </Pressable>
 
-      {/* podpis OSM */}
       <View style={styles.osm}>
         <Text style={styles.osmText}>© OpenStreetMap contributors</Text>
       </View>
@@ -313,9 +316,9 @@ const styles = StyleSheet.create({
   },
   osm: {
     position: "absolute",
-    bottom: 8,
-    left: 8,
-    backgroundColor: "rgba(255,255,255,0.8)",
+    bottom: 4,
+    right: 8,
+    backgroundColor: "transparent",
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
