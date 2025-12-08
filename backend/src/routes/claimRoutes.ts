@@ -174,7 +174,9 @@ router.get(
     const responderId = req.user!.userId;
     let claims = await Claim.find({
       responderId,
-      status: { $in: ["pending", "approved", "rejected", "completed"] },
+      status: {
+        $in: ["pending", "approved", "rejected", "completed", "archived"],
+      },
     })
       .sort({ createdAt: -1 })
       .lean();

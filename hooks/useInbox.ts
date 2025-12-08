@@ -34,7 +34,7 @@ export type Claim = {
 export type InboxGroup = {
   itemId: string;
   itemTitle: string;
-  itemStatus: "active" | "expired" | "returned";
+  itemStatus: "active" | "expired" | "returned" | "archived";
   claims: Claim[];
 };
 
@@ -105,7 +105,7 @@ export function useInbox(mode: ModeKey, subTab: SubKey) {
         );
     } else {
       const ACTIVE: ClaimStatus[] = ["pending", "approved"];
-      const CLOSED: ClaimStatus[] = ["rejected", "completed"];
+      const CLOSED: ClaimStatus[] = ["rejected", "completed", "archived"];
       const filtered = claimsSent.filter((c) =>
         subTab === "active"
           ? ACTIVE.includes(c.status)
@@ -136,7 +136,6 @@ export function useInbox(mode: ModeKey, subTab: SubKey) {
     }
   }, [mode, subTab, inboxGroups, claimsSent]);
 
-  // policz ile nieprzeczytanych na sekcję
   const unreadByItem = useMemo(() => {
     const out: Record<string, number> = {};
     for (const sec of sections) {
@@ -148,7 +147,6 @@ export function useInbox(mode: ModeKey, subTab: SubKey) {
     return out;
   }, [sections, mode]);
 
-  // osobna funkcja do oznaczania danej sekcji jako przeczytanej
   const markSectionSeen = useCallback(
     async (itemId: string) => {
       const sec = sections.find((s) => s.itemId === itemId);
@@ -169,7 +167,6 @@ export function useInbox(mode: ModeKey, subTab: SubKey) {
           console.log("mark seen error", e);
         }
       }
-      // odśwież po oznaczeniu
       fetchCurrent(false);
     },
     [sections, mode, fetchCurrent]
@@ -180,7 +177,6 @@ export function useInbox(mode: ModeKey, subTab: SubKey) {
       const willOpen = !expanded[itemId];
       setExpanded((prev) => ({ ...prev, [itemId]: willOpen }));
       if (willOpen) {
-        // nie czekamy na state, tylko od razu oznaczamy
         markSectionSeen(itemId);
       }
     },

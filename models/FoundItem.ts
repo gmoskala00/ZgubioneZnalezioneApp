@@ -2,7 +2,7 @@ export type FoundItem = {
   _id?: string;
   title: string;
   description: string;
-  dateFound: string; // ISO
+  dateFound: string;
   foundLocation: {
     lat: number;
     lng: number;
@@ -13,7 +13,7 @@ export type FoundItem = {
   contactMethod: "email" | "phone" | "other";
   contactDetails: string;
   createdBy: string;
-  status?: "active" | "expired" | "returned";
+  status?: "active" | "expired" | "returned" | "archived";
 };
 
 export const foundItemCategories = [

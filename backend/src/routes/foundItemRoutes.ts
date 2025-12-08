@@ -1,10 +1,25 @@
 import { Router, Request, Response } from "express";
 import FoundItem from "../models/FoundItem";
+import Claim from "../models/Claim";
 import { foundItemSchema } from "../../../shared/dist/schemas/FoundItemSchema";
 import { verifyToken, AuthenticatedRequest } from "../middleware/verifyToken";
 import { fold } from "../utils/fold";
 
 const router = Router();
+
+const EXPIRE_AFTER_DAYS = 30;
+
+async function expireOldItems() {
+  const cutoff = new Date(Date.now() - EXPIRE_AFTER_DAYS * 24 * 60 * 60 * 1000);
+  try {
+    await FoundItem.updateMany(
+      { status: "active", createdAt: { $lt: cutoff } },
+      { status: "expired" }
+    );
+  } catch (err) {
+    console.error("Expire old items error:", err);
+  }
+}
 
 router.post(
   "/",
@@ -35,6 +50,8 @@ router.post(
 
 router.get("/", async (_req: Request, res: Response): Promise<void> => {
   try {
+    await expireOldItems();
+
     const items = await FoundItem.find({}).sort({ createdAt: -1 }).limit(200);
     res.json(items);
   } catch (err) {
@@ -44,6 +61,8 @@ router.get("/", async (_req: Request, res: Response): Promise<void> => {
 });
 
 router.get("/bbox", async (req: Request, res: Response): Promise<void> => {
+  await expireOldItems();
+
   const n = Number(req.query.n);
   const e = Number(req.query.e);
   const s = Number(req.query.s);
@@ -67,7 +86,7 @@ router.get("/bbox", async (req: Request, res: Response): Promise<void> => {
   const filter: any = {
     "foundLocation.lat": { $gte: s, $lte: n },
     "foundLocation.lng": { $gte: w, $lte: e },
-    status: { $nin: ["expired", "returned"] },
+    status: { $nin: ["expired", "returned", "archived"] },
   };
 
   if (categories.length > 0) {
@@ -114,5 +133,50 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+router.patch(
+  "/:id/archive",
+  verifyToken,
+  async (req: AuthenticatedRequest, res: Response): Promise<any> => {
+    try {
+      const userId = req.user!.userId;
+      const item = await FoundItem.findById(req.params.id);
+
+      if (!item) {
+        return res.status(404).json({ message: "Ogłoszenie nie istnieje." });
+      }
+
+      if (String(item.createdBy) !== userId) {
+        return res.status(403).json({ message: "Brak uprawnień." });
+      }
+
+      if (item.status !== "active") {
+        return res.status(400).json({
+          message:
+            "Ogłoszenie nie jest aktywne i nie może zostać zarchiwizowane.",
+        });
+      }
+
+      item.status = "archived";
+      await item.save();
+
+      await Claim.updateMany(
+        { itemId: item._id, status: { $in: ["pending", "approved"] } },
+        {
+          status: "archived",
+          responderUnread: true,
+        }
+      );
+
+      return res.json({
+        ok: true,
+        message: "Ogłoszenie zostało zarchiwizowane.",
+      });
+    } catch (err) {
+      console.error("Archive item error:", err);
+      return res.status(500).json({ message: "Server error" });
+    }
+  }
+);
 
 export default router;

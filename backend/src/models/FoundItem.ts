@@ -13,7 +13,7 @@ export interface IFoundItem extends Document {
   contactMethod: "email" | "phone" | "other";
   contactDetails: string;
   createdBy: Schema.Types.ObjectId;
-  status?: "active" | "expired" | "returned";
+  status?: "active" | "expired" | "returned" | "archived";
 }
 
 const foundItemSchema = new Schema<IFoundItem>(

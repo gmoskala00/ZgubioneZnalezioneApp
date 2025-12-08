@@ -51,6 +51,19 @@ const InboxScreen = () => {
     refetchCurrent();
   };
 
+  const archiveItem = async (itemId: string) => {
+    await Api.patch(`/api/found-items/${itemId}/archive`);
+    refetchCurrent();
+  };
+
+  const handleArchiveItemWithConfirm = (itemId: string) => {
+    confirm(
+      "Zarchiwizować ogłoszenie?",
+      "Ogłoszenie zniknie z listy aktywnych, a powiązane odpowiedzi zostaną oznaczone jako zarchiwizowane.",
+      () => archiveItem(itemId)
+    );
+  };
+
   const handleActionWithConfirm = (
     claimId: string,
     action: "approved" | "rejected" | "archived" | "completed"
@@ -84,7 +97,6 @@ const InboxScreen = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: GlobalStyles.colors.background }}>
-      {/* główne taby */}
       <View style={styles.mainTabs}>
         {[
           { key: "mine", label: "🧭 Moje ogłoszenia" },
@@ -107,7 +119,6 @@ const InboxScreen = () => {
         })}
       </View>
 
-      {/* podzakładki */}
       <View style={styles.subTabs}>
         {[
           { key: "active", label: "📬 Aktualne" },
@@ -167,6 +178,17 @@ const InboxScreen = () => {
                     </Text>
                   </View>
                 ) : null}
+
+                {/* przycisk Archiwizuj tylko dla Moje ogłoszenia / Aktualne */}
+                {mode === "mine" && subTab === "active" && (
+                  <Pressable
+                    onPress={() => handleArchiveItemWithConfirm(section.itemId)}
+                    style={styles.headerArchiveBtn}
+                  >
+                    <Text style={styles.headerArchiveText}>Archiwizuj</Text>
+                  </Pressable>
+                )}
+
                 <Text style={styles.headerMeta}>
                   {expanded[section.itemId] ? "▲" : "▼"}{" "}
                   {renderHeaderMeta(section)}
@@ -297,5 +319,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     marginTop: "50%",
+  },
+  headerArchiveBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: GlobalStyles.colors.border,
+    backgroundColor: GlobalStyles.colors.card,
+  },
+  headerArchiveText: {
+    fontSize: 12,
+    color: GlobalStyles.colors.textSecondary,
   },
 });
