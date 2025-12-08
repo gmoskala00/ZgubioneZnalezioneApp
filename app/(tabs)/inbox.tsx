@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
     marginTop: "50%",
   },
   headerArchiveBtn: {
-    marginRight: 10,
+    marginRight: 16,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,

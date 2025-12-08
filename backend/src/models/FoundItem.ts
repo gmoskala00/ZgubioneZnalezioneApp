@@ -47,7 +47,7 @@ const foundItemSchema = new Schema<IFoundItem>(
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
     status: {
       type: String,
-      enum: ["active", "expired", "returned"],
+      enum: ["active", "expired", "returned", "archived"],
       default: "active",
     },
   },
