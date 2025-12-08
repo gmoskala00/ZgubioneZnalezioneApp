@@ -14,6 +14,7 @@ export interface IFoundItem extends Document {
   contactDetails: string;
   createdBy: Schema.Types.ObjectId;
   status?: "active" | "expired" | "returned" | "archived";
+  renewDate?: Date;
 }
 
 const foundItemSchema = new Schema<IFoundItem>(

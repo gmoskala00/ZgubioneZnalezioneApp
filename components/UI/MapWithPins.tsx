@@ -233,6 +233,7 @@ export default function MapWithPins({
             key={it._id}
             title={it.title}
             description={it.foundLocation.description || it.description || ""}
+            pinColor="lightgreen"
             coordinate={{
               latitude: it.foundLocation.lat,
               longitude: it.foundLocation.lng,

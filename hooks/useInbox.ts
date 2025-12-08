@@ -42,6 +42,7 @@ type Section = {
   itemId: string;
   title: string;
   data: Claim[];
+  itemStatus?: InboxGroup["itemStatus"];
 };
 
 export function useInbox(mode: ModeKey, subTab: SubKey) {
@@ -94,6 +95,7 @@ export function useInbox(mode: ModeKey, subTab: SubKey) {
         .map((g) => ({
           itemId: g.itemId,
           title: g.itemTitle,
+          itemStatus: g.itemStatus,
           data: g.claims
             .slice()
             .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),

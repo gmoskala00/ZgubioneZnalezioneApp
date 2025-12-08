@@ -33,4 +33,5 @@ export const foundItemSchema = z.object({
   createdBy: z.string().min(1, "User ID is required"),
 
   status: z.enum(["active", "expired", "returned", "archived"]).optional(),
+  renewDate: z.string().datetime().optional(),
 });

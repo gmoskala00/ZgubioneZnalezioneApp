@@ -64,6 +64,19 @@ const InboxScreen = () => {
     );
   };
 
+  const renewItem = async (itemId: string) => {
+    await Api.patch(`/api/found-items/${itemId}/renew`);
+    refetchCurrent();
+  };
+
+  const handleRenewItemWithConfirm = (itemId: string) => {
+    confirm(
+      "Odnów ogłoszenie?",
+      "Ogłoszenie zostanie ponownie oznaczone jako aktywne na kolejne 30 dni.",
+      () => renewItem(itemId)
+    );
+  };
+
   const handleActionWithConfirm = (
     claimId: string,
     action: "approved" | "rejected" | "archived" | "completed"
@@ -179,7 +192,6 @@ const InboxScreen = () => {
                   </View>
                 ) : null}
 
-                {/* przycisk Archiwizuj tylko dla Moje ogłoszenia / Aktualne */}
                 {mode === "mine" && subTab === "active" && (
                   <Pressable
                     onPress={() => handleArchiveItemWithConfirm(section.itemId)}
@@ -188,6 +200,24 @@ const InboxScreen = () => {
                     <Text style={styles.headerArchiveText}>Archiwizuj</Text>
                   </Pressable>
                 )}
+
+                {mode === "mine" &&
+                  subTab === "closed" &&
+                  section.itemStatus === "expired" && (
+                    <>
+                      <View style={styles.headerStatusBadge}>
+                        <Text style={styles.headerStatusText}>Wygasło</Text>
+                      </View>
+                      <Pressable
+                        onPress={() =>
+                          handleRenewItemWithConfirm(section.itemId)
+                        }
+                        style={styles.headerRenewBtn}
+                      >
+                        <Text style={styles.headerRenewText}>Odnów</Text>
+                      </Pressable>
+                    </>
+                  )}
 
                 <Text style={styles.headerMeta}>
                   {expanded[section.itemId] ? "▲" : "▼"}{" "}
@@ -247,11 +277,11 @@ const styles = StyleSheet.create({
   },
   mainTabText: {
     color: GlobalStyles.colors.textSecondary,
-    fontWeight: "600",
+    fontFamily: "Nunito-Regular",
   },
   mainTabTextActive: {
     color: "#fff",
-    fontWeight: "700",
+    fontFamily: "Nunito-Bold",
   },
   subTabs: {
     flexDirection: "row",
@@ -321,6 +351,7 @@ const styles = StyleSheet.create({
     marginTop: "50%",
   },
   headerArchiveBtn: {
+    marginRight: 10,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
@@ -330,6 +361,31 @@ const styles = StyleSheet.create({
   },
   headerArchiveText: {
     fontSize: 12,
+    fontFamily: "Nunito-Bold",
     color: GlobalStyles.colors.textSecondary,
+  },
+  headerStatusBadge: {
+    fontSize: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+  headerStatusText: {
+    fontFamily: "Nunito-Bold",
+    color: "#E65100",
+  },
+  headerRenewBtn: {
+    marginRight: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: GlobalStyles.colors.border,
+    backgroundColor: GlobalStyles.colors.card,
+  },
+  headerRenewText: {
+    fontSize: 12,
+    fontFamily: "Nunito-Bold",
+    color: GlobalStyles.colors.primaryDark,
   },
 });

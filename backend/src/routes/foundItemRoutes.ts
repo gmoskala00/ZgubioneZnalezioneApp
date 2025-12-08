@@ -11,9 +11,23 @@ const EXPIRE_AFTER_DAYS = 30;
 
 async function expireOldItems() {
   const cutoff = new Date(Date.now() - EXPIRE_AFTER_DAYS * 24 * 60 * 60 * 1000);
+
   try {
     await FoundItem.updateMany(
-      { status: "active", createdAt: { $lt: cutoff } },
+      {
+        status: "active",
+        $expr: {
+          $lt: [
+            {
+              $ifNull: [
+                "$renewDate",
+                { $ifNull: ["$createdAt", "$dateFound"] },
+              ],
+            },
+            cutoff,
+          ],
+        },
+      },
       { status: "expired" }
     );
   } catch (err) {
@@ -174,6 +188,44 @@ router.patch(
       });
     } catch (err) {
       console.error("Archive item error:", err);
+      return res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
+router.patch(
+  "/:id/renew",
+  verifyToken,
+  async (req: AuthenticatedRequest, res: Response): Promise<any> => {
+    try {
+      const userId = req.user!.userId;
+      const item = await FoundItem.findById(req.params.id);
+
+      if (!item) {
+        return res.status(404).json({ message: "Ogłoszenie nie istnieje." });
+      }
+
+      if (String(item.createdBy) !== userId) {
+        return res.status(403).json({ message: "Brak uprawnień." });
+      }
+
+      if (item.status !== "expired") {
+        return res.status(400).json({
+          message: "Można odnowić tylko ogłoszenia, które wygasły.",
+        });
+      }
+
+      item.status = "active";
+      item.renewDate = new Date();
+
+      await item.save();
+
+      return res.json({
+        ok: true,
+        message: "Ogłoszenie zostało odnowione i jest znów aktywne.",
+      });
+    } catch (err) {
+      console.error("Renew item error:", err);
       return res.status(500).json({ message: "Server error" });
     }
   }
