@@ -122,7 +122,7 @@ router.get("/bbox", async (req: Request, res: Response): Promise<void> => {
   try {
     const items = await FoundItem.find(filter)
       .select(
-        "_id title description dateFound foundLocation categories createdAt"
+        "_id title description dateFound foundLocation categories createdAt createdBy"
       )
       .sort({ createdAt: -1 })
       .limit(limit);

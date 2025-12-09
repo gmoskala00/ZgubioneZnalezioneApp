@@ -14,6 +14,7 @@ export type FoundItem = {
   contactDetails: string;
   createdBy: string;
   status?: "active" | "expired" | "returned" | "archived";
+  renewDate?: Date;
 };
 
 export const foundItemCategories = [

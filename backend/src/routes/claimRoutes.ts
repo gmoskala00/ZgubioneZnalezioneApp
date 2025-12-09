@@ -172,6 +172,7 @@ router.get(
   verifyToken,
   async (req: AuthenticatedRequest, res): Promise<void> => {
     const responderId = req.user!.userId;
+
     let claims = await Claim.find({
       responderId,
       status: {
@@ -181,17 +182,34 @@ router.get(
       .sort({ createdAt: -1 })
       .lean();
 
+    if (claims.length === 0) {
+      res.json([]);
+      return;
+    }
+
     const items = await FoundItem.find(
       { _id: { $in: claims.map((c) => c.itemId) } },
-      { title: 1 }
+      { title: 1, status: 1 }
     ).lean();
-    const titleById = Object.fromEntries(
-      items.map((i) => [String(i._id), i.title])
+
+    const itemById = Object.fromEntries(
+      items.map((i) => [
+        String(i._id),
+        {
+          title: i.title,
+          status: i.status as "active" | "expired" | "returned" | "archived",
+        },
+      ])
     );
-    claims = claims.map((c) => ({
-      ...c,
-      itemTitle: titleById[String(c.itemId)],
-    }));
+
+    claims = claims.map((c) => {
+      const it = itemById[String(c.itemId)];
+      return {
+        ...c,
+        itemTitle: it?.title ?? "Ogłoszenie",
+        itemStatus: it?.status ?? "active",
+      };
+    });
 
     claims = await enrichApprovedContactsForSent(claims);
 

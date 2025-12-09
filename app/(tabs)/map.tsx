@@ -77,6 +77,7 @@ const MapScreen = () => {
         foundLocation: it.foundLocation,
         categories: it.categories,
         dateFound: it.dateFound,
+        createdBy: it.createdBy,
       }));
     },
     [query, catsApplied]

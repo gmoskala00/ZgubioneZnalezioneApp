@@ -5,8 +5,7 @@ export type ClaimStatus =
   | "approved"
   | "rejected"
   | "archived"
-  | "completed"
-  | "expired";
+  | "completed";
 
 interface IClaim extends Document {
   itemId: Types.ObjectId;
@@ -32,14 +31,7 @@ const claimSchema = new Schema<IClaim>(
     message: { type: String },
     status: {
       type: String,
-      enum: [
-        "pending",
-        "approved",
-        "rejected",
-        "archived",
-        "completed",
-        "expired",
-      ],
+      enum: ["pending", "approved", "rejected", "archived", "completed"],
       default: "pending",
     },
     ownerUnread: { type: Boolean, default: true },

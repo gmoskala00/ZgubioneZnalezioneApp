@@ -13,7 +13,7 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import dayjs from "dayjs";
 import Button from "./Button";
-import LocationPicker from "./location-picker";
+import LocationPicker from "./LocationPicker";
 import { foundItemCategories } from "../../models/FoundItem";
 import { CATEGORY_LABELS, CONTACT_METHOD_LABELS } from "../../i18n/labels";
 import { Api } from "../../services/api";

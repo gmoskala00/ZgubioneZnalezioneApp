@@ -8,6 +8,7 @@ import {
   StyleSheet,
 } from "react-native";
 import MapView, { Marker, Region, Callout } from "react-native-maps";
+import { useAuth } from "../../store/AuthContext";
 import * as Location from "expo-location";
 import dayjs from "dayjs";
 import "dayjs/locale/pl";
@@ -21,6 +22,7 @@ export type MapItem = {
   foundLocation: { lat: number; lng: number; description?: string };
   categories?: string[];
   dateFound?: string;
+  createdBy: string;
 };
 
 type Props = {
@@ -38,7 +40,7 @@ type Props = {
   onLoadingChange?: (loading: boolean) => void;
 };
 
-export default function MapWithPins({
+const MapWithPins = ({
   fetchByBBox,
   initialRegion,
   idleMs = 350,
@@ -46,7 +48,7 @@ export default function MapWithPins({
   epsilonDeltaDeg = 0.0002,
   refreshToken,
   onLoadingChange,
-}: Props) {
+}: Props) => {
   const [ready, setReady] = useState(false);
   const [items, setItems] = useState<MapItem[]>([]);
 
@@ -59,6 +61,8 @@ export default function MapWithPins({
   const latestReqId = useRef(0);
 
   const userLocationRef = useRef<{ lat: number; lng: number } | null>(null);
+
+  const { userId } = useAuth();
 
   useEffect(() => {
     (async () => {
@@ -233,7 +237,11 @@ export default function MapWithPins({
             key={it._id}
             title={it.title}
             description={it.foundLocation.description || it.description || ""}
-            pinColor="lightgreen"
+            pinColor={
+              String(it.createdBy) === String(userId)
+                ? GlobalStyles.colors.primary
+                : GlobalStyles.colors.error
+            }
             coordinate={{
               latitude: it.foundLocation.lat,
               longitude: it.foundLocation.lng,
@@ -284,7 +292,9 @@ export default function MapWithPins({
       </View>
     </View>
   );
-}
+};
+
+export default MapWithPins;
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center" },

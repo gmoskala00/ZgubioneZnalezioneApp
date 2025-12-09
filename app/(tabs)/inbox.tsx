@@ -32,7 +32,7 @@ const InboxScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      refetchCurrent();
+      refetchCurrent(true);
     }, [mode, subTab, refetchCurrent])
   );
 
@@ -192,6 +192,18 @@ const InboxScreen = () => {
                   </View>
                 ) : null}
 
+                {subTab === "closed" && section.itemStatus && (
+                  <View style={styles.headerStatusBadge}>
+                    <Text style={styles.headerStatusText}>
+                      {section.itemStatus === "expired"
+                        ? "Wygasło"
+                        : section.itemStatus === "archived"
+                        ? "Zarchiwizowane"
+                        : ""}
+                    </Text>
+                  </View>
+                )}
+
                 {mode === "mine" && subTab === "active" && (
                   <Pressable
                     onPress={() => handleArchiveItemWithConfirm(section.itemId)}
@@ -204,19 +216,12 @@ const InboxScreen = () => {
                 {mode === "mine" &&
                   subTab === "closed" &&
                   section.itemStatus === "expired" && (
-                    <>
-                      <View style={styles.headerStatusBadge}>
-                        <Text style={styles.headerStatusText}>Wygasło</Text>
-                      </View>
-                      <Pressable
-                        onPress={() =>
-                          handleRenewItemWithConfirm(section.itemId)
-                        }
-                        style={styles.headerRenewBtn}
-                      >
-                        <Text style={styles.headerRenewText}>Odnów</Text>
-                      </Pressable>
-                    </>
+                    <Pressable
+                      onPress={() => handleRenewItemWithConfirm(section.itemId)}
+                      style={styles.headerRenewBtn}
+                    >
+                      <Text style={styles.headerRenewText}>Odnów</Text>
+                    </Pressable>
                   )}
 
                 <Text style={styles.headerMeta}>
@@ -320,7 +325,7 @@ const styles = StyleSheet.create({
     borderColor: GlobalStyles.colors.border,
   },
   headerTitle: {
-    fontWeight: "bold",
+    fontFamily: "Nunito-Bold",
     color: GlobalStyles.colors.textPrimary,
     flex: 1,
     marginRight: 8,
@@ -330,7 +335,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
   },
-  headerMeta: { color: GlobalStyles.colors.textSecondary },
+  headerMeta: {
+    color: GlobalStyles.colors.textSecondary,
+    fontFamily: "Nunito-Regular",
+  },
   unreadBadge: {
     backgroundColor: "#2e7d32",
     borderRadius: 999,

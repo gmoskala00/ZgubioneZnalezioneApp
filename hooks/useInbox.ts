@@ -9,13 +9,13 @@ export type ClaimStatus =
   | "approved"
   | "rejected"
   | "archived"
-  | "completed"
-  | "expired";
+  | "completed";
 
 export type Claim = {
   _id: string;
   itemId: string;
   itemTitle?: string;
+  itemStatus?: "active" | "expired" | "returned" | "archived";
   ownerId: string;
   responderId: string;
   answers: [string, string];
@@ -108,24 +108,43 @@ export function useInbox(mode: ModeKey, subTab: SubKey) {
     } else {
       const ACTIVE: ClaimStatus[] = ["pending", "approved"];
       const CLOSED: ClaimStatus[] = ["rejected", "completed", "archived"];
+
       const filtered = claimsSent.filter((c) =>
         subTab === "active"
           ? ACTIVE.includes(c.status)
           : CLOSED.includes(c.status)
       );
-      const map = new Map<string, { title: string; claims: Claim[] }>();
+
+      const map = new Map<
+        string,
+        {
+          title: string;
+          claims: Claim[];
+          itemStatus?: InboxGroup["itemStatus"];
+        }
+      >();
+
       filtered.forEach((c) => {
-        const g = map.get(c.itemId) ?? {
-          title: c.itemTitle ?? "Ogłoszenie",
-          claims: [],
-        };
-        g.claims.push(c);
-        map.set(c.itemId, g);
+        const existing = map.get(c.itemId);
+        if (!existing) {
+          map.set(c.itemId, {
+            title: c.itemTitle ?? "Ogłoszenie",
+            claims: [c],
+            itemStatus: c.itemStatus,
+          });
+        } else {
+          existing.claims.push(c);
+          if (!existing.itemStatus && c.itemStatus) {
+            existing.itemStatus = c.itemStatus;
+          }
+        }
       });
+
       return Array.from(map.entries())
         .map(([itemId, g]) => ({
           itemId,
           title: g.title,
+          itemStatus: g.itemStatus,
           data: g.claims.sort(
             (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)
           ),
@@ -189,9 +208,12 @@ export function useInbox(mode: ModeKey, subTab: SubKey) {
     fetchCurrent(false);
   }, [fetchCurrent]);
 
-  const refetchCurrent = useCallback(() => {
-    fetchCurrent(false);
-  }, [fetchCurrent]);
+  const refetchCurrent = useCallback(
+    (useInitial = true) => {
+      fetchCurrent(useInitial);
+    },
+    [fetchCurrent]
+  );
 
   return {
     sections,

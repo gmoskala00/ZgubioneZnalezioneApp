@@ -50,6 +50,7 @@ const foundItemSchema = new Schema<IFoundItem>(
       enum: ["active", "expired", "returned", "archived"],
       default: "active",
     },
+    renewDate: { type: Date },
   },
   { timestamps: true }
 );
