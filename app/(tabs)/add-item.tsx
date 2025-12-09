@@ -7,7 +7,7 @@ export default function AddItemScreen() {
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
       <FoundItemForm />
     </KeyboardAvoidingView>

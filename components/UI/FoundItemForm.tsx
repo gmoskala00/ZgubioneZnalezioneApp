@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../store/AuthContext";
 import {
   Alert,
+  Keyboard,
   Platform,
   Pressable,
   ScrollView,
@@ -20,11 +21,7 @@ import { Api } from "../../services/api";
 
 type ContactMethod = "email" | "phone" | "other";
 
-type FoundItemFormProps = {
-  onSuccess?: () => void;
-};
-
-const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
+const FoundItemForm: React.FC = () => {
   const { userData } = useAuth();
 
   const [title, setTitle] = useState("");
@@ -133,10 +130,10 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
       setQuestion1("");
       setQuestion2("");
       setContactMethod("email");
-      setContactDetails("");
+      setContactDetails(userData?.email || "");
+      Keyboard.dismiss();
 
       Alert.alert("Sukces", "Przedmiot został dodany!");
-      onSuccess?.();
     } catch (err: any) {
       if (err?.message === "Unauthorized") {
         Alert.alert("Sesja wygasła", "Zaloguj się ponownie.");
@@ -365,7 +362,7 @@ const FoundItemForm: React.FC<FoundItemFormProps> = ({ onSuccess }) => {
             ? "jan.kowalski@example.com"
             : contactMethod === "phone"
             ? "500 600 700"
-            : "FB: Jan Kowalski"
+            : "Facebook (link)"
         }
         autoCapitalize={contactMethod === "email" ? "none" : "sentences"}
         keyboardType={contactMethod === "phone" ? "phone-pad" : "default"}

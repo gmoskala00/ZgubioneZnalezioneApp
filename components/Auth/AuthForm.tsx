@@ -68,9 +68,9 @@ const AuthForm = ({ isLogin, credentialsInvalid, onSubmit }: AuthFormProps) => {
         <Input
           onUpdateValue={(value) => updateInputHandler("username", value)}
           value={enteredUsername}
-          placeholder="Username"
+          placeholder="Nazwa użytkownika"
           isInvalid={usernameIsInvalid}
-          errorMessage="Username must be longer than 3 characters"
+          errorMessage="Nazwa Użytkownika musi być dłuższa niż 3 znaki"
         />
       )}
       <Input
@@ -79,18 +79,18 @@ const AuthForm = ({ isLogin, credentialsInvalid, onSubmit }: AuthFormProps) => {
         placeholder="E-mail"
         isInvalid={emailIsInvalid}
         keyboardType="email-address"
-        errorMessage="Invalid e-mail"
+        errorMessage="Nieprawidłow e-mail"
       />
       <Input
         onUpdateValue={(value) => updateInputHandler("password", value)}
         value={enteredPassword}
-        placeholder="Password"
+        placeholder="Hasło"
         secure
         isInvalid={passwordIsInvalid}
         errorMessage={
           isLogin
-            ? "Invalid Password"
-            : "Password must contain 6 characters and one number"
+            ? "Nieprawidłowe hasło"
+            : "Hasło musi zawierać conajmniej 6 znaków i jedną cyfrę"
         }
       />
       {!isLogin && (
@@ -99,24 +99,24 @@ const AuthForm = ({ isLogin, credentialsInvalid, onSubmit }: AuthFormProps) => {
             updateInputHandler("confirmPassword", value)
           }
           value={enteredConfirmPassword}
-          placeholder="Confim Password"
+          placeholder="Potwierdź hasło"
           secure
           isInvalid={passwordsDontMatch}
-          errorMessage="Passwords do not match"
+          errorMessage="Hasła nie są identyczne"
         />
       )}
       {!isLogin && (
         <Input
           onUpdateValue={(value) => updateInputHandler("phoneNumber", value)}
           value={enteredPhoneNumber}
-          placeholder="Phone Number (optional)"
+          placeholder="Numer Telefonu (opcjonalny)"
           isInvalid={phoneNumberIsInvalid}
           keyboardType="phone-pad"
-          errorMessage="Phone Number is not correct"
+          errorMessage="Numer telefonu nie jest prawdiłowy"
         />
       )}
       <Button onPress={submitHandler} style={styles.button}>
-        {isLogin ? "Log In" : "Register"}
+        {isLogin ? "Zaloguj się" : "Rejestracja"}
       </Button>
     </View>
   );

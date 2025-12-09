@@ -32,12 +32,12 @@ export const ClaimCard: React.FC<Props> = ({
               Dane kontaktowe zgłaszającego:
             </Text>
             {!!c.contactForOwner?.email && (
-              <Text style={styles.contactLine}>
+              <Text selectable style={styles.contactLine}>
                 E-mail: {c.contactForOwner.email}
               </Text>
             )}
             {!!c.contactForOwner?.phone && (
-              <Text style={styles.contactLine}>
+              <Text selectable style={styles.contactLine}>
                 Telefon: {c.contactForOwner.phone}
               </Text>
             )}
@@ -48,7 +48,7 @@ export const ClaimCard: React.FC<Props> = ({
               Dane kontaktowe właściciela:
             </Text>
             {c.contactForResponder?.details && (
-              <Text style={styles.contactLine}>
+              <Text selectable style={styles.contactLine}>
                 {c.contactForResponder.method === "phone"
                   ? "Telefon"
                   : c.contactForResponder.method === "email"
@@ -134,8 +134,6 @@ const getStatusTextStyle = (s: ClaimStatus) => ({
       : s === "pending"
       ? "#f9a825"
       : s === "archived"
-      ? "#546e7a"
-      : s === "expired"
       ? "#8e8e8e"
       : GlobalStyles.colors.primaryDark,
 });

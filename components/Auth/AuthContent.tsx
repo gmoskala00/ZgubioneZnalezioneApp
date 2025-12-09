@@ -1,4 +1,10 @@
-import { StyleSheet, View, Text } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from "react-native";
 import { router } from "expo-router";
 
 import AuthForm from "./AuthForm";
@@ -64,8 +70,8 @@ const AuthContent = ({ isLogin, onAuthenticate }: AuthContentProps) => {
 
       Toast.show({
         type: "error",
-        text1: "Invalid input",
-        text2: "Please check your entered credentials.",
+        text1: "Nieprawidłowe dane",
+        text2: "Sprawdź wprowadzone dane.",
       });
 
       return;
@@ -87,23 +93,27 @@ const AuthContent = ({ isLogin, onAuthenticate }: AuthContentProps) => {
   }
 
   return (
-    <View style={styles.wrapper}>
-      <View style={styles.container}>
-        <Text style={styles.title}>{isLogin ? "Login" : "Register"}</Text>
-        <AuthForm
-          isLogin={isLogin}
-          credentialsInvalid={credentialsInvalid}
-          onSubmit={submitHandler}
-        />
-        <Button
-          onPress={switchAuthModeHandler}
-          mode="flat"
-          style={styles.button}
-        >
-          {isLogin ? "Create an Account" : "Log In instead"}
-        </Button>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.wrapper}>
+        <View style={styles.container}>
+          <Text style={styles.title}>
+            {isLogin ? "Logowanie" : "Rejestracja"}
+          </Text>
+          <AuthForm
+            isLogin={isLogin}
+            credentialsInvalid={credentialsInvalid}
+            onSubmit={submitHandler}
+          />
+          <Button
+            onPress={switchAuthModeHandler}
+            mode="flat"
+            style={styles.button}
+          >
+            {isLogin ? "Stwórz Konto" : "Zaloguj się jeśli masz konto"}
+          </Button>
+        </View>
       </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 };
 

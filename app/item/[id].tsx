@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Pressable,
   Alert,
+  Keyboard,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import dayjs from "dayjs";
@@ -99,6 +100,7 @@ const ItemDetailsModal = () => {
       setAns1("");
       setAns2("");
       setExtraMsg("");
+      Keyboard.dismiss();
       close();
     } catch (e: any) {
       Alert.alert("Błąd", e.message || "Coś poszło nie tak");
