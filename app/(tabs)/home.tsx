@@ -39,6 +39,8 @@ const HomeScreen = () => {
 
   const mapClickHandle = () => router.push("/(tabs)/map");
   const addClickHandle = () => router.push("/(tabs)/add-item");
+  const inboxClickHandle = () => router.push("/(tabs)/inbox");
+  const profileClickHandle = () => router.push("/(tabs)/profile");
 
   return (
     <View style={styles.outerContainer}>
@@ -62,6 +64,16 @@ const HomeScreen = () => {
           iconName="add-outline"
           onPress={addClickHandle}
         />
+        <ActionTile
+          text="Skrzynka"
+          iconName="folder-outline"
+          onPress={inboxClickHandle}
+        />
+        <ActionTile
+          text="Profil"
+          iconName="person-outline"
+          onPress={profileClickHandle}
+        />
       </View>
     </View>
   );
@@ -71,16 +83,21 @@ export default HomeScreen;
 
 const styles = StyleSheet.create({
   outerContainer: { flex: 1 },
-  textContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  textContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 12,
+  },
   text: {
     fontSize: 32,
     fontFamily: "Nunito-Bold",
     color: GlobalStyles.colors.primaryDark,
   },
   imageContainer: { flex: 5, justifyContent: "center", alignItems: "center" },
-  image: { width: 350, height: 270 },
+  image: { width: 340, height: 250 },
   buttonsContainer: {
-    flex: 3,
+    flex: 4,
     padding: 8,
     flexDirection: "row",
     flexWrap: "wrap",

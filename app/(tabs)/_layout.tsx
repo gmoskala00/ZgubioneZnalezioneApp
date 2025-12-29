@@ -59,6 +59,7 @@ export default function TabsLayout() {
           ),
           title: "Zgubione Znalezione",
           tabBarLabel: "Start",
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen

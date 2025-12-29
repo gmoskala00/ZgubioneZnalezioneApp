@@ -1,17 +1,17 @@
 export const GlobalStyles = {
   colors: {
-    background: "#FAF9F6", // jasne tło
-    card: "#FFFFFF", // formularze / karty
-    primary: "#4CAF50", // główny zielony (np. przyciski)
-    primaryDark: "#156541", // ciemniejszy zielony (hover, aktywne)
-    accent: "#81C784", // dodatkowy zielony (np. zaznaczenia)
-    textPrimary: "#222222", // główny kolor tekstu
-    textSecondary: "#5A5A5A", // tekst pomocniczy (np. linki, labelki)
-    error: "#D32F2F", // czerwony do błędów
-    border: "#E0E0E0", // linie/obramowania inputów
-    icon: "#424242", // ikony nieaktywne
-    tabActive: "#4CAF50", // aktywna zakładka
-    tabInactive: "#5A5A5A", // nieaktywna zakładka
-    pressedBackground: "#E8E8E8", // delikatnie szary na tap
+    background: "#FAF9F6",
+    card: "#FFFFFF",
+    primary: "#4CAF50",
+    primaryDark: "#156541",
+    accent: "#81C784",
+    textPrimary: "#222222",
+    textSecondary: "#5A5A5A",
+    error: "#D32F2F",
+    border: "#E0E0E0",
+    icon: "#424242",
+    tabActive: "#4CAF50",
+    tabInactive: "#5A5A5A",
+    pressedBackground: "#E8E8E8",
   },
 };
