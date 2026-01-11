@@ -236,7 +236,7 @@ export default function LocationPicker({
       try {
         const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(
           q
-        )}&limit=10&lang=en`; // <= LANG = EN
+        )}&limit=10&lang=en`;
         const res = await fetch(url, {
           headers: { "User-Agent": "ZgubioneZnalezione/1.0 (education)" },
         });
@@ -304,9 +304,8 @@ export default function LocationPicker({
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>Wyszukaj adres</Text>
+      <Text style={styles.label}>Zaznacz adres *</Text>
 
-      {/* Input + przycisk + loader */}
       <View style={{ marginBottom: 4 }}>
         <View style={styles.row}>
           <TextInput
@@ -418,7 +417,7 @@ export default function LocationPicker({
 
 const styles = StyleSheet.create({
   wrapper: { gap: 8, marginVertical: 10 },
-  label: { fontWeight: "bold" },
+  label: { fontFamily: "Nunito-Bold" },
   row: { flexDirection: "row", gap: 8, alignItems: "center" },
   input: {
     flex: 1,

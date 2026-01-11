@@ -158,11 +158,14 @@ const FoundItemForm: React.FC = () => {
       />
 
       <Text style={styles.label}>Opis *</Text>
+      <Text style={{ fontSize: 11, color: "#666" }}>
+        Nie podawaj odpowiedzi na pytania weryfikacyjne w opisie!
+      </Text>
       <TextInput
         style={[styles.input, { minHeight: 80 }]}
         value={description}
         onChangeText={setDescription}
-        placeholder="Np. znalezione w tramwaju nr 4"
+        placeholder="Opis miejsca znalezienia lub przedmiotu"
         multiline
       />
 
@@ -362,7 +365,7 @@ const FoundItemForm: React.FC = () => {
             ? "jan.kowalski@example.com"
             : contactMethod === "phone"
             ? "500 600 700"
-            : "Facebook (link)"
+            : "Np. Link do profilu"
         }
         autoCapitalize={contactMethod === "email" ? "none" : "sentences"}
         keyboardType={contactMethod === "phone" ? "phone-pad" : "default"}
@@ -379,7 +382,7 @@ export default FoundItemForm;
 
 const styles = StyleSheet.create({
   container: { padding: 16, gap: 12 },
-  label: { fontWeight: "bold" },
+  label: { fontFamily: "Nunito-Bold" },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
