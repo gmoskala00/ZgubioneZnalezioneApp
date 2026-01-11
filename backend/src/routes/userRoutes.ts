@@ -5,6 +5,18 @@ import { userUpdateSchema } from "../../../shared/dist/schemas/UserUpdateSchema"
 
 const router = Router();
 
+type MongoDupKeyError = {
+  code?: number;
+  keyPattern?: Record<string, unknown>;
+  keyValue?: Record<string, unknown>;
+  message?: string;
+};
+
+const asMongoDupKeyError = (err: unknown): MongoDupKeyError => {
+  if (err && typeof err === "object") return err as MongoDupKeyError;
+  return {};
+};
+
 router.get(
   "/me",
   verifyToken,
@@ -44,6 +56,29 @@ router.patch(
 
       if (typeof username !== "undefined") user.username = username;
       if (typeof email !== "undefined") user.email = email;
+
+      if (typeof email !== "undefined") {
+        const nextEmail = String(email).trim().toLowerCase();
+
+        if (
+          nextEmail !==
+          String(user.email || "")
+            .trim()
+            .toLowerCase()
+        ) {
+          const exists = await User.exists({
+            email: nextEmail,
+            _id: { $ne: user._id },
+          });
+
+          if (exists) {
+            return res.status(409).json({ message: "E-mail jest już zajęty." });
+          }
+
+          user.email = nextEmail;
+        }
+      }
+
       if (typeof phoneNumber !== "undefined") {
         user.phoneNumber = phoneNumber || undefined;
       }
@@ -54,7 +89,19 @@ router.patch(
       delete (safeUser as any).password;
 
       res.status(200).json(safeUser);
-    } catch (error) {
+    } catch (err) {
+      const error = asMongoDupKeyError(err);
+
+      if (error?.code === 11000) {
+        const dupField = Object.keys(
+          error.keyPattern || error.keyValue || {}
+        )[0];
+        if (dupField === "email") {
+          return res.status(409).json({ message: "E-mail jest już zajęty." });
+        }
+        return res.status(409).json({ message: "Wartość jest już zajęta." });
+      }
+
       console.error("Error updating user: ", (error as Error).message);
       return res.status(500).json({ message: "Server error" });
     }

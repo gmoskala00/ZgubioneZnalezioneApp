@@ -20,6 +20,7 @@ type AuthContextType = {
   userData: UserData | null;
   setUserData: (data: UserData | null) => void;
   logout: () => Promise<void>;
+  refreshMe: () => void;
   isHydrating: boolean;
 };
 
@@ -31,6 +32,7 @@ export const AuthContext = createContext<AuthContextType>({
   userData: null,
   setUserData: () => {},
   logout: async () => {},
+  refreshMe: () => {},
   isHydrating: true,
 });
 
@@ -96,6 +98,12 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
     router.replace("/auth/login");
   };
 
+  const refreshMe = async () => {
+    if (!token || !userId) return;
+    const data = await Api.getMe();
+    setUserData(data);
+  };
+
   const value: AuthContextType = {
     userId,
     token,
@@ -104,6 +112,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
     userData,
     setUserData,
     logout,
+    refreshMe,
     isHydrating,
   };
 

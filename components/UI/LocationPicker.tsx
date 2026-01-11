@@ -67,14 +67,22 @@ export default function LocationPicker({
   const [suggestions, setSuggestions] = useState<PhotonFeature[]>([]);
   const [loadingSuggest, setLoadingSuggest] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
+  const [locating, setLocating] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
       try {
+        setLocating(true);
+
         const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") return;
+        if (cancelled) return;
+
+        if (status !== "granted") {
+          setLocating(false);
+          return;
+        }
 
         const loc = await Location.getCurrentPositionAsync({});
         if (cancelled) return;
@@ -89,6 +97,8 @@ export default function LocationPicker({
         mapRef.current?.animateToRegion(userRegion, 600);
       } catch (e) {
         console.log("LocationPicker: cannot get user location", e);
+      } finally {
+        if (!cancelled) setLocating(false);
       }
     })();
 
@@ -377,28 +387,36 @@ export default function LocationPicker({
       </View>
 
       <View style={{ borderRadius: 10, overflow: "hidden" }}>
-        <MapView
-          ref={mapRef}
-          style={{ width: "100%", height }}
-          initialRegion={initialRegion}
-          onPress={handleMapPress}
-          onLongPress={handleMapLongPress}
-        >
-          <UrlTile
-            urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            maximumZ={19}
-            zIndex={-1}
-            // @ts-ignore
-            subdomains={["a", "b", "c"]}
-          />
-          {marker && (
-            <Marker
-              coordinate={{ latitude: marker.lat, longitude: marker.lng }}
-              title="Wybrana lokalizacja"
-              description={selectedAddress || undefined}
+        <View style={{ width: "100%", height }}>
+          <MapView
+            ref={mapRef}
+            style={StyleSheet.absoluteFill}
+            initialRegion={initialRegion}
+            onPress={handleMapPress}
+            onLongPress={handleMapLongPress}
+          >
+            <UrlTile
+              urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              maximumZ={19}
+              zIndex={-1}
+              // @ts-ignore
+              subdomains={["a", "b", "c"]}
             />
+            {marker && (
+              <Marker
+                coordinate={{ latitude: marker.lat, longitude: marker.lng }}
+                title="Wybrana lokalizacja"
+                description={selectedAddress || undefined}
+              />
+            )}
+          </MapView>
+
+          {locating && (
+            <View style={styles.mapLoadingOverlay}>
+              <ActivityIndicator size="large" />
+            </View>
           )}
-        </MapView>
+        </View>
       </View>
 
       {marker && (
@@ -458,5 +476,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
     marginTop: 2,
+  },
+  mapLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.35)",
   },
 });

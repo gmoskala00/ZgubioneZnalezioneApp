@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   View,
   ActivityIndicator,
@@ -7,13 +7,12 @@ import {
   Text,
   StyleSheet,
 } from "react-native";
-import MapView, { Marker, Region, Callout } from "react-native-maps";
+import MapView, { Marker, Region } from "react-native-maps";
 import { useAuth } from "../../store/AuthContext";
 import * as Location from "expo-location";
-import dayjs from "dayjs";
-import "dayjs/locale/pl";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { GlobalStyles } from "../../constants/style";
+import BubbleTooltip from "./BubbleTooltip";
 
 export type MapItem = {
   _id: string;
@@ -51,15 +50,14 @@ const MapWithPins = ({
 }: Props) => {
   const [ready, setReady] = useState(false);
   const [items, setItems] = useState<MapItem[]>([]);
+  const [selected, setSelected] = useState<MapItem | null>(null);
+  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
 
   const mapRef = useRef<MapView | null>(null);
-
   const regionRef = useRef<Region | null>(initialRegion ?? null);
   const lastFetchedRef = useRef<Region | null>(null);
-
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestReqId = useRef(0);
-
   const userLocationRef = useRef<{ lat: number; lng: number } | null>(null);
 
   const { userId } = useAuth();
@@ -103,7 +101,6 @@ const MapWithPins = ({
         regionRef.current = userRegion;
         setReady(true);
       } catch (e) {
-        console.warn("Location unavailable, using fallback region:", e);
         const fallback: Region = {
           latitude: 52.237049,
           longitude: 21.017532,
@@ -168,6 +165,19 @@ const MapWithPins = ({
     doFetch(regionRef.current, true, true);
   }, [fetchByBBox]);
 
+  const closeTooltip = useCallback(() => {
+    setSelected(null);
+    setAnchor(null);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        closeTooltip();
+      };
+    }, [closeTooltip])
+  );
+
   const scheduleIdleFetch = (r: Region) => {
     if (idleTimer.current) clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(() => doFetch(r, false, false), idleMs);
@@ -178,6 +188,17 @@ const MapWithPins = ({
     scheduleIdleFetch(r);
   };
 
+  const updateAnchorForSelected = useCallback(async () => {
+    if (!selected || !mapRef.current) return;
+    try {
+      const p = await mapRef.current.pointForCoordinate({
+        latitude: selected.foundLocation.lat,
+        longitude: selected.foundLocation.lng,
+      });
+      setAnchor(p);
+    } catch {}
+  }, [selected]);
+
   const onRegionChangeComplete = (r: Region) => {
     regionRef.current = r;
     if (idleTimer.current) {
@@ -185,7 +206,16 @@ const MapWithPins = ({
       idleTimer.current = null;
     }
     doFetch(r, false, false);
+    updateAnchorForSelected();
   };
+
+  useEffect(() => {
+    if (!selected) {
+      setAnchor(null);
+      return;
+    }
+    updateAnchorForSelected();
+  }, [selected, updateAnchorForSelected]);
 
   const recenterToUser = async () => {
     try {
@@ -207,6 +237,7 @@ const MapWithPins = ({
         longitudeDelta: 0.06,
       };
       mapRef.current?.animateToRegion(r, 600);
+      setTimeout(() => updateAnchorForSelected(), 350);
     } catch (e) {
       console.log("recenter error", e);
     }
@@ -231,12 +262,11 @@ const MapWithPins = ({
         showsUserLocation
         followsUserLocation={false}
         showsMyLocationButton={false}
+        onPress={closeTooltip}
       >
         {items.map((it) => (
           <Marker
             key={it._id}
-            title={it.title}
-            description={it.foundLocation.description || it.description || ""}
             pinColor={
               String(it.createdBy) === String(userId)
                 ? GlobalStyles.colors.primary
@@ -246,36 +276,22 @@ const MapWithPins = ({
               latitude: it.foundLocation.lat,
               longitude: it.foundLocation.lng,
             }}
-          >
-            <Callout
-              tooltip={false}
-              onPress={() => router.push(`/item/${it._id}`)}
-            >
-              <View style={styles.callout}>
-                <Text style={styles.title} numberOfLines={1}>
-                  {it.title}
-                </Text>
-                {!!it.description && (
-                  <Text style={styles.desc} numberOfLines={2}>
-                    {it.description}
-                  </Text>
-                )}
-                {!!it.dateFound && (
-                  <Text style={styles.meta}>
-                    Znaleziono:{" "}
-                    {dayjs(it.dateFound)
-                      .locale("pl")
-                      .format("D MMMM YYYY, HH:mm")}
-                  </Text>
-                )}
-                <View style={[styles.btn, { marginTop: 10 }]}>
-                  <Text style={styles.btnText}>Szczegóły</Text>
-                </View>
-              </View>
-            </Callout>
-          </Marker>
+            onPress={(e) => {
+              e.stopPropagation?.();
+              setSelected(it);
+            }}
+          />
         ))}
       </MapView>
+
+      {selected && anchor && (
+        <BubbleTooltip
+          item={selected}
+          anchor={anchor}
+          onClose={closeTooltip}
+          onDetails={() => router.push(`/item/${selected._id}`)}
+        />
+      )}
 
       <Pressable
         onPress={recenterToUser}
@@ -298,24 +314,6 @@ export default MapWithPins;
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  callout: {
-    width: 260,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: "#fff",
-    elevation: 8,
-  },
-  title: { fontWeight: "bold", fontSize: 16, marginBottom: 4 },
-  desc: { color: "#444" },
-  meta: { marginTop: 6, fontSize: 12, color: "#666" },
-  btn: {
-    marginTop: 10,
-    backgroundColor: GlobalStyles.colors.primary,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  btnText: { color: "#fff", fontWeight: "bold" },
   myLocationBtn: {
     position: "absolute",
     bottom: 25,

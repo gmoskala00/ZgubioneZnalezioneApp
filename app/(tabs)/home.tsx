@@ -1,14 +1,14 @@
 import { StyleSheet, Text, View, Image } from "react-native";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Asset } from "expo-asset";
 import { useAuth } from "../../store/AuthContext";
 import { GlobalStyles } from "../../constants/style";
 import ActionTile from "../../components/UI/ActionTile";
 import LoadingOverlay from "../../components/UI/LoadingOverlay";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 
 const HomeScreen = () => {
-  const { userData } = useAuth();
+  const { userData, refreshMe } = useAuth();
   const [imageReady, setImageReady] = useState(false);
   const [ready, setReady] = useState(false);
 
@@ -32,6 +32,12 @@ const HomeScreen = () => {
   useEffect(() => {
     if (userData && imageReady) setReady(true);
   }, [userData, imageReady]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshMe();
+    }, [refreshMe])
+  );
 
   if (!ready) {
     return <LoadingOverlay message="Ładowanie..." />;

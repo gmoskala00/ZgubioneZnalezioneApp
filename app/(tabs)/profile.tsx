@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Pressable,
   ScrollView,
+  Alert,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
 import Toast from "react-native-toast-message";
@@ -36,6 +37,7 @@ const ProfileScreen = () => {
       setUsername(me.username);
       setEmail(me.email);
       setPhoneNumber(me.phoneNumber ?? "");
+      setErrors({});
     } catch (e: any) {
       Toast.show({
         type: "error",
@@ -80,23 +82,15 @@ const ProfileScreen = () => {
     return Object.keys(next).length === 0;
   };
 
-  const save = async () => {
-    if (!validate()) {
-      Toast.show({
-        type: "error",
-        text1: "Sprawdź pola",
-        text2: "Popraw zaznaczone dane i spróbuj ponownie.",
-      });
-      return;
-    }
-
+  const doSave = async () => {
     setSaving(true);
     try {
-      const updated = await Api.updateMe({
+      await Api.updateMe({
         username: username.trim(),
         email: email.trim(),
         phoneNumber: phoneNumber.trim(),
       });
+
       Toast.show({
         type: "success",
         text1: "Zapisano",
@@ -107,6 +101,7 @@ const ProfileScreen = () => {
         e?.message && typeof e.message === "string"
           ? e.message
           : "Nie udało się zapisać zmian.";
+
       Toast.show({
         type: "error",
         text1: "Błąd zapisu",
@@ -115,6 +110,26 @@ const ProfileScreen = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const confirmSave = () => {
+    if (!validate()) {
+      Toast.show({
+        type: "error",
+        text1: "Sprawdź pola",
+        text2: "Popraw zaznaczone dane i spróbuj ponownie.",
+      });
+      return;
+    }
+
+    Alert.alert(
+      "Zapisać zmiany?",
+      "Czy na pewno chcesz zaktualizować dane profilu?",
+      [
+        { text: "Anuluj", style: "cancel" },
+        { text: "Zapisz", style: "default", onPress: doSave },
+      ]
+    );
   };
 
   if (loading) {
@@ -138,7 +153,6 @@ const ProfileScreen = () => {
       </Text>
 
       <View style={styles.card}>
-        {/* USERNAME */}
         <View style={styles.field}>
           <Text style={styles.label}>Nazwa użytkownika</Text>
           <TextInput
@@ -160,7 +174,6 @@ const ProfileScreen = () => {
           ) : null}
         </View>
 
-        {/* EMAIL */}
         <View style={styles.field}>
           <Text style={styles.label}>E-mail</Text>
           <TextInput
@@ -182,7 +195,6 @@ const ProfileScreen = () => {
           ) : null}
         </View>
 
-        {/* PHONE */}
         <View style={styles.field}>
           <Text style={styles.label}>Telefon (opcjonalnie)</Text>
           <TextInput
@@ -209,7 +221,7 @@ const ProfileScreen = () => {
         </View>
 
         <Pressable
-          onPress={save}
+          onPress={confirmSave}
           disabled={saving}
           style={({ pressed }) => [
             styles.btn,
