@@ -27,7 +27,7 @@ export default function BubbleTooltip({
   });
 
   const MARGIN = 10;
-  const GAP = 20;
+  const GAP = 5;
   const ARROW_H = 10;
 
   let bubbleLeft = anchor.x - size.w / 2;
@@ -49,56 +49,52 @@ export default function BubbleTooltip({
   };
 
   return (
-    <>
-      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-      <View
-        style={[styles.wrap, { left: bubbleLeft, top: bubbleTop }]}
-        onLayout={(ev) => {
-          const { width, height } = ev.nativeEvent.layout;
-          if (
-            Math.abs(width - size.w) > 0.5 ||
-            Math.abs(height - size.h) > 0.5
-          ) {
-            setSize({ w: width, h: height });
-          }
-        }}
-      >
-        <View style={styles.bubble}>
-          <Text style={styles.title} numberOfLines={1}>
-            {item.title}
+    <View
+      style={[styles.wrap, { left: bubbleLeft, top: bubbleTop }]}
+      pointerEvents="box-none"
+      onLayout={(ev) => {
+        const { width, height } = ev.nativeEvent.layout;
+        if (Math.abs(width - size.w) > 0.5 || Math.abs(height - size.h) > 0.5) {
+          setSize({ w: width, h: height });
+        }
+      }}
+    >
+      <View style={styles.bubble} pointerEvents="auto">
+        <Text style={styles.title} numberOfLines={1}>
+          {item.title}
+        </Text>
+
+        <Text style={styles.desc} numberOfLines={2}>
+          {item.foundLocation.description || item.description || ""}
+        </Text>
+
+        {!!item.dateFound && (
+          <Text style={styles.meta}>
+            Znaleziono:{" "}
+            {dayjs(item.dateFound).locale("pl").format("D MMMM YYYY, HH:mm")}
           </Text>
+        )}
 
-          <Text style={styles.desc} numberOfLines={2}>
-            {item.foundLocation.description || item.description || ""}
-          </Text>
-
-          {!!item.dateFound && (
-            <Text style={styles.meta}>
-              Znaleziono:{" "}
-              {dayjs(item.dateFound).locale("pl").format("D MMMM YYYY, HH:mm")}
-            </Text>
-          )}
-
-          <Pressable
-            style={({ pressed }) => [styles.btn, pressed && { opacity: 0.85 }]}
-            onPress={handleDetailsPress}
-          >
-            <Text style={styles.btnText}>Szczegóły</Text>
-          </Pressable>
-        </View>
-
-        <View
-          style={[
-            styles.arrow,
-            {
-              left: arrowLeft,
-              top: below ? -ARROW_H : size.h,
-              transform: below ? [{ rotate: "180deg" }] : [{ rotate: "0deg" }],
-            },
-          ]}
-        />
+        <Pressable
+          style={({ pressed }) => [styles.btn, pressed && { opacity: 0.85 }]}
+          onPress={handleDetailsPress}
+        >
+          <Text style={styles.btnText}>Szczegóły</Text>
+        </Pressable>
       </View>
-    </>
+
+      <View
+        pointerEvents="none"
+        style={[
+          styles.arrow,
+          {
+            left: arrowLeft,
+            top: below ? -ARROW_H : size.h,
+            transform: below ? [{ rotate: "180deg" }] : [{ rotate: "0deg" }],
+          },
+        ]}
+      />
+    </View>
   );
 }
 
@@ -122,6 +118,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   btnText: { color: "#fff", fontWeight: "800", fontSize: 18 },
+  close: { marginTop: 10, paddingVertical: 6, alignItems: "center" },
+  closeText: { color: "#666", fontWeight: "600" },
   arrow: {
     position: "absolute",
     width: 0,

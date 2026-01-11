@@ -6,10 +6,14 @@ import {
   Pressable,
   Text,
   StyleSheet,
+  Platform,
+  Dimensions,
 } from "react-native";
-import MapView, { Marker, Region } from "react-native-maps";
+import MapView, { Marker, Region, Callout } from "react-native-maps";
 import { useAuth } from "../../store/AuthContext";
 import * as Location from "expo-location";
+import dayjs from "dayjs";
+import "dayjs/locale/pl";
 import { router, useFocusEffect } from "expo-router";
 import { GlobalStyles } from "../../constants/style";
 import BubbleTooltip from "./BubbleTooltip";
@@ -54,6 +58,9 @@ const MapWithPins = ({
   const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
 
   const mapRef = useRef<MapView | null>(null);
+  const markerRefs = useRef<Record<string, any>>({});
+  const selectedIdRef = useRef<string | null>(null);
+
   const regionRef = useRef<Region | null>(initialRegion ?? null);
   const lastFetchedRef = useRef<Region | null>(null);
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -92,15 +99,14 @@ const MapWithPins = ({
           lat: loc.coords.latitude,
           lng: loc.coords.longitude,
         };
-        const userRegion: Region = {
+        regionRef.current = {
           latitude: loc.coords.latitude,
           longitude: loc.coords.longitude,
           latitudeDelta: 0.08,
           longitudeDelta: 0.08,
         };
-        regionRef.current = userRegion;
         setReady(true);
-      } catch (e) {
+      } catch {
         const fallback: Region = {
           latitude: 52.237049,
           longitude: 21.017532,
@@ -165,10 +171,22 @@ const MapWithPins = ({
     doFetch(regionRef.current, true, true);
   }, [fetchByBBox]);
 
-  const closeTooltip = useCallback(() => {
-    setSelected(null);
-    setAnchor(null);
+  const hideSelectedCallout = useCallback(() => {
+    if (Platform.OS !== "ios") return;
+    const id = selectedIdRef.current;
+    if (!id) return;
+    markerRefs.current[id]?.hideCallout?.();
   }, []);
+
+  const closeTooltip = useCallback(() => {
+    hideSelectedCallout();
+    selectedIdRef.current = null;
+
+    if (Platform.OS === "android") {
+      setSelected(null);
+      setAnchor(null);
+    }
+  }, [hideSelectedCallout]);
 
   useFocusEffect(
     useCallback(() => {
@@ -188,15 +206,32 @@ const MapWithPins = ({
     scheduleIdleFetch(r);
   };
 
-  const updateAnchorForSelected = useCallback(async () => {
+  const updateAnchorForSelectedAndroid = useCallback(async () => {
+    if (Platform.OS !== "android") return;
     if (!selected || !mapRef.current) return;
+
     try {
       const p = await mapRef.current.pointForCoordinate({
         latitude: selected.foundLocation.lat,
         longitude: selected.foundLocation.lng,
       });
+
+      const { width: W, height: H } = Dimensions.get("window");
+      const M = 10;
+
+      const isOffscreen = p.x < M || p.y < M || p.x > W - M || p.y > H - M;
+
+      if (isOffscreen) {
+        setSelected(null);
+        setAnchor(null);
+        return;
+      }
+
       setAnchor(p);
-    } catch {}
+    } catch {
+      setSelected(null);
+      setAnchor(null);
+    }
   }, [selected]);
 
   const onRegionChangeComplete = (r: Region) => {
@@ -206,16 +241,22 @@ const MapWithPins = ({
       idleTimer.current = null;
     }
     doFetch(r, false, false);
-    updateAnchorForSelected();
+
+    if (Platform.OS === "android") {
+      updateAnchorForSelectedAndroid();
+    }
   };
 
   useEffect(() => {
+    if (Platform.OS !== "android") return;
+
     if (!selected) {
       setAnchor(null);
       return;
     }
-    updateAnchorForSelected();
-  }, [selected, updateAnchorForSelected]);
+
+    updateAnchorForSelectedAndroid();
+  }, [selected, updateAnchorForSelectedAndroid]);
 
   const recenterToUser = async () => {
     try {
@@ -230,18 +271,38 @@ const MapWithPins = ({
 
       const user = userLocationRef.current;
       if (!user) return;
+
       const r: Region = {
         latitude: user.lat,
         longitude: user.lng,
         latitudeDelta: 0.06,
         longitudeDelta: 0.06,
       };
+
       mapRef.current?.animateToRegion(r, 600);
-      setTimeout(() => updateAnchorForSelected(), 350);
+
+      if (Platform.OS === "android") {
+        setTimeout(() => updateAnchorForSelectedAndroid(), 350);
+      }
     } catch (e) {
       console.log("recenter error", e);
     }
   };
+
+  const goDetailsIOS = useCallback(
+    (id: string) => {
+      hideSelectedCallout();
+      selectedIdRef.current = null;
+      router.push(`/item/${id}`);
+    },
+    [hideSelectedCallout]
+  );
+
+  const goDetailsAndroid = useCallback((id: string) => {
+    setSelected(null);
+    setAnchor(null);
+    router.push(`/item/${id}`);
+  }, []);
 
   if (!ready || !regionRef.current) {
     return (
@@ -267,6 +328,9 @@ const MapWithPins = ({
         {items.map((it) => (
           <Marker
             key={it._id}
+            ref={(ref) => {
+              if (ref) markerRefs.current[it._id] = ref;
+            }}
             pinColor={
               String(it.createdBy) === String(userId)
                 ? GlobalStyles.colors.primary
@@ -276,20 +340,54 @@ const MapWithPins = ({
               latitude: it.foundLocation.lat,
               longitude: it.foundLocation.lng,
             }}
+            hitSlop={{ top: 18, bottom: 18, left: 18, right: 18 }}
             onPress={(e) => {
               e.stopPropagation?.();
-              setSelected(it);
+              selectedIdRef.current = it._id;
+
+              if (Platform.OS === "android") {
+                setSelected(it);
+              }
             }}
-          />
+          >
+            {Platform.OS === "ios" ? (
+              <Callout tooltip={false} onPress={() => goDetailsIOS(it._id)}>
+                <View style={styles.callout}>
+                  <Text style={styles.title} numberOfLines={1}>
+                    {it.title}
+                  </Text>
+
+                  {!!(it.foundLocation.description || it.description) && (
+                    <Text style={styles.desc} numberOfLines={2}>
+                      {it.foundLocation.description || it.description || ""}
+                    </Text>
+                  )}
+
+                  {!!it.dateFound && (
+                    <Text style={styles.meta}>
+                      Znaleziono:{" "}
+                      {dayjs(it.dateFound)
+                        .locale("pl")
+                        .format("D MMMM YYYY, HH:mm")}
+                    </Text>
+                  )}
+
+                  <View style={[styles.btn, { marginTop: 10 }]}>
+                    <Text style={styles.btnText}>Szczegóły</Text>
+                  </View>
+                </View>
+              </Callout>
+            ) : null}
+          </Marker>
         ))}
       </MapView>
 
-      {selected && anchor && (
+      {Platform.OS === "android" && selected && anchor && (
         <BubbleTooltip
           item={selected}
           anchor={anchor}
           onClose={closeTooltip}
-          onDetails={() => router.push(`/item/${selected._id}`)}
+          onDetails={() => goDetailsAndroid(selected._id)}
         />
       )}
 
@@ -314,6 +412,26 @@ export default MapWithPins;
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
+
+  callout: {
+    width: 260,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    elevation: 8,
+  },
+  title: { fontWeight: "bold", fontSize: 16, marginBottom: 4 },
+  desc: { color: "#444" },
+  meta: { marginTop: 6, fontSize: 12, color: "#666" },
+  btn: {
+    marginTop: 10,
+    backgroundColor: GlobalStyles.colors.primary,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  btnText: { color: "#fff", fontWeight: "bold" },
+
   myLocationBtn: {
     position: "absolute",
     bottom: 25,
@@ -332,8 +450,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  osmText: {
-    fontSize: 10,
-    color: "#555",
-  },
+  osmText: { fontSize: 10, color: "#555" },
 });
