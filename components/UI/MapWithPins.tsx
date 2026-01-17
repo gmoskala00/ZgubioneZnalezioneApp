@@ -33,7 +33,7 @@ type Props = {
     n: number,
     e: number,
     s: number,
-    w: number
+    w: number,
   ) => Promise<MapItem[]>;
   initialRegion?: Region;
   idleMs?: number;
@@ -81,7 +81,7 @@ const MapWithPins = ({
         if (status !== "granted") {
           Alert.alert(
             "Brak uprawnień do lokalizacji",
-            "Użyjemy pozycji domyślnej."
+            "Użyjemy pozycji domyślnej.",
           );
           const fallback: Region = {
             latitude: 52.237049,
@@ -190,10 +190,16 @@ const MapWithPins = ({
 
   useFocusEffect(
     useCallback(() => {
-      return () => {
-        closeTooltip();
-      };
-    }, [closeTooltip])
+      if (!ready || !regionRef.current) return;
+
+      doFetch(regionRef.current, true, true);
+
+      const t = setTimeout(() => {
+        if (regionRef.current) doFetch(regionRef.current, false, true);
+      }, 500);
+
+      return () => clearTimeout(t);
+    }, [ready]),
   );
 
   const scheduleIdleFetch = (r: Region) => {
@@ -295,7 +301,7 @@ const MapWithPins = ({
       selectedIdRef.current = null;
       router.push(`/item/${id}`);
     },
-    [hideSelectedCallout]
+    [hideSelectedCallout],
   );
 
   const goDetailsAndroid = useCallback((id: string) => {

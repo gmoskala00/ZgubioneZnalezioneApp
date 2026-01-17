@@ -26,6 +26,7 @@ type Props = {
   onLocationSelect?: (lat: number, lng: number, address?: string) => void;
   initialRegion?: Region;
   height?: number;
+  resetSignal?: number;
 };
 
 type PhotonFeature = {
@@ -60,14 +61,14 @@ const pickFirst = (...vals: Array<unknown>) =>
 
 const formatAddressSmart = (
   addr: Record<string, any> | undefined,
-  displayName?: string
+  displayName?: string,
 ) => {
   const road = pickFirst(
     addr?.road,
     addr?.pedestrian,
     addr?.footway,
     addr?.path,
-    addr?.residential
+    addr?.residential,
   ) as string | undefined;
 
   const house = addr?.house_number as string | undefined;
@@ -83,14 +84,14 @@ const formatAddressSmart = (
     addr?.quarter,
     addr?.city_district,
     addr?.district,
-    addr?.borough
+    addr?.borough,
   ) as string | undefined;
 
   const poi = pickFirst(
     addr?.name,
     addr?.amenity,
     addr?.leisure,
-    addr?.tourism
+    addr?.tourism,
   ) as string | undefined;
 
   const line2 = [postcode, city].filter(Boolean).join(" ").trim() || undefined;
@@ -123,6 +124,7 @@ export default function LocationPicker({
     latitudeDelta: 0.08,
     longitudeDelta: 0.08,
   },
+  resetSignal = 0,
 }: Props) {
   const mapRef = useRef<MapView>(null);
   const markerRef = useRef<ComponentRef<typeof Marker> | null>(null);
@@ -142,6 +144,27 @@ export default function LocationPicker({
   const [locating, setLocating] = useState(true);
 
   const reverseReqId = useRef(0);
+
+  const closeDropdown = useCallback(() => {
+    setDropdownOpen(false);
+    setSuggestions([]);
+  }, []);
+
+  const clearPicker = useCallback(() => {
+    reverseReqId.current += 1;
+    setMarker(null);
+    setAddress("");
+    setTypingQuery("");
+    setSuggestions([]);
+    setLoadingSuggest(false);
+    setDropdownOpen(false);
+    setSelectedAddress(undefined);
+    setAddressLoading(false);
+  }, []);
+
+  useEffect(() => {
+    clearPicker();
+  }, [resetSignal, clearPicker]);
 
   useEffect(() => {
     let cancelled = false;
@@ -167,7 +190,7 @@ export default function LocationPicker({
             latitudeDelta: 0.05,
             longitudeDelta: 0.05,
           },
-          600
+          600,
         );
       } catch (e) {
         console.log("LocationPicker: cannot get user location", e);
@@ -179,11 +202,6 @@ export default function LocationPicker({
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  const closeDropdown = useCallback(() => {
-    setDropdownOpen(false);
-    setSuggestions([]);
   }, []);
 
   const reverseGeocode = useCallback(async (lat: number, lng: number) => {
@@ -206,7 +224,7 @@ export default function LocationPicker({
 
       try {
         const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(
-          cleaned
+          cleaned,
         )}&limit=10&lang=pl`;
         const res = await fetch(url, {
           headers: { "User-Agent": "ZgubioneZnalezione/1.0 (education)" },
@@ -222,7 +240,7 @@ export default function LocationPicker({
 
       try {
         const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(
-          cleaned
+          cleaned,
         )}&limit=10&addressdetails=1`;
         const res = await fetch(url, {
           headers: { "User-Agent": "ZgubioneZnalezione/1.0 (education)" },
@@ -239,7 +257,7 @@ export default function LocationPicker({
             city: pickFirst(
               it.address?.city,
               it.address?.town,
-              it.address?.village
+              it.address?.village,
             ) as string | undefined,
             postcode: it.address?.postcode,
             country: it.address?.country,
@@ -256,7 +274,7 @@ export default function LocationPicker({
         return [];
       }
     },
-    []
+    [],
   );
 
   useEffect(() => {
@@ -305,7 +323,7 @@ export default function LocationPicker({
         updateAddress?: boolean;
         overrideAddress?: string;
         moveMap?: boolean;
-      }
+      },
     ) => {
       const updateAddress = options?.updateAddress ?? false;
       const overrideAddress = options?.overrideAddress;
@@ -322,7 +340,7 @@ export default function LocationPicker({
             latitudeDelta: 0.02,
             longitudeDelta: 0.02,
           },
-          300
+          300,
         );
       }
 
@@ -356,7 +374,6 @@ export default function LocationPicker({
           if (finalAddr)
             requestAnimationFrame(() => markerRef.current?.showCallout?.());
         } finally {
-          // wyłącz spinner nawet jeśli wynik był “stary” / przerwany
           if (reqId === reverseReqId.current) setAddressLoading(false);
         }
 
@@ -369,7 +386,7 @@ export default function LocationPicker({
       if (fallback)
         requestAnimationFrame(() => markerRef.current?.showCallout?.());
     },
-    [address, onLocationSelect, reverseGeocode]
+    [address, onLocationSelect, reverseGeocode],
   );
 
   const handleMapPress = (e: MapPressEvent) => {
@@ -395,7 +412,7 @@ export default function LocationPicker({
 
     try {
       const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(
-        q
+        q,
       )}&limit=1&addressdetails=1`;
       const resp = await fetch(url, {
         headers: { "User-Agent": "ZgubioneZnalezione/1.0 (education)" },
@@ -405,7 +422,7 @@ export default function LocationPicker({
       if (!Array.isArray(data) || data.length === 0) {
         Alert.alert(
           "Nie znaleziono",
-          "Spróbuj wpisać dokładniej (ulica, numer, miasto)."
+          "Spróbuj wpisać dokładniej (ulica, numer, miasto).",
         );
         return;
       }
@@ -442,7 +459,7 @@ export default function LocationPicker({
       p.neighbourhood,
       p.suburb,
       p.city_district,
-      p.district
+      p.district,
     ) as string | undefined;
 
     const line2 = [postcode, city].filter(Boolean).join(" ").trim();
@@ -515,7 +532,7 @@ export default function LocationPicker({
                   p.neighbourhood,
                   p.suburb,
                   p.city_district,
-                  p.district
+                  p.district,
                 ) as string | undefined;
 
                 const line1 = street
@@ -566,7 +583,7 @@ export default function LocationPicker({
               maximumZ={19}
               zIndex={-1}
               // @ts-ignore
-              subdomains={["a", "b", "c"]}
+              subdomains={["a", "b", "c"] as any}
             />
 
             {marker && (
@@ -592,8 +609,8 @@ export default function LocationPicker({
           {selectedAddress
             ? `📍 ${selectedAddress}`
             : addressLoading
-            ? "📍 Ładowanie adresu…"
-            : `Lat: ${marker.lat.toFixed(6)} | Lng: ${marker.lng.toFixed(6)}`}
+              ? "📍 Ładowanie adresu…"
+              : `Lat: ${marker.lat.toFixed(6)} | Lng: ${marker.lng.toFixed(6)}`}
         </Text>
       )}
 

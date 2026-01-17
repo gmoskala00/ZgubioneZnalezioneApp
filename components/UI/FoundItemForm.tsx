@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../store/AuthContext";
 import {
   Alert,
@@ -18,6 +18,7 @@ import LocationPicker from "./LocationPicker";
 import { foundItemCategories } from "../../models/FoundItem";
 import { CATEGORY_LABELS, CONTACT_METHOD_LABELS } from "../../i18n/labels";
 import { Api } from "../../services/api";
+import { useFocusEffect } from "expo-router";
 
 type ContactMethod = "email" | "phone" | "other";
 
@@ -46,6 +47,8 @@ const FoundItemForm: React.FC = () => {
   const [contactMethod, setContactMethod] = useState<ContactMethod>("email");
   const [contactDetails, setContactDetails] = useState("");
 
+  const [locationResetSignal, setLocationResetSignal] = useState(0);
+
   useEffect(() => {
     if (contactMethod === "email") {
       setContactDetails(userData?.email || "");
@@ -56,6 +59,13 @@ const FoundItemForm: React.FC = () => {
     }
   }, [contactMethod, userData]);
 
+  useFocusEffect(
+    useCallback(() => {
+      setLocationResetSignal((s) => s + 1);
+      setLocation(null);
+    }, []),
+  );
+
   const clampToNow = (d: Date) => {
     const now = new Date();
     return d.getTime() > now.getTime() ? now : d;
@@ -63,7 +73,7 @@ const FoundItemForm: React.FC = () => {
 
   const toggleCategory = (c: string) =>
     setCategories((prev) =>
-      prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]
+      prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c],
     );
 
   const validate = () => {
@@ -114,7 +124,7 @@ const FoundItemForm: React.FC = () => {
         categories,
         securityQuestions: [question1.trim(), question2.trim()] as [
           string,
-          string
+          string,
         ],
         contactMethod,
         contactDetails: contactDetails.trim(),
@@ -131,6 +141,7 @@ const FoundItemForm: React.FC = () => {
       setQuestion2("");
       setContactMethod("email");
       setContactDetails(userData?.email || "");
+      setLocationResetSignal((s) => s + 1);
       Keyboard.dismiss();
 
       Alert.alert("Sukces", "Przedmiot został dodany!");
@@ -176,6 +187,7 @@ const FoundItemForm: React.FC = () => {
           {!showDatePicker ? (
             <Button
               onPress={() => {
+                Keyboard.dismiss();
                 setTempIosDate(dateFound ?? new Date());
                 setShowDatePicker(true);
               }}
@@ -246,7 +258,7 @@ const FoundItemForm: React.FC = () => {
                       base.getHours(),
                       base.getMinutes(),
                       0,
-                      0
+                      0,
                     );
                   });
                 }
@@ -275,7 +287,7 @@ const FoundItemForm: React.FC = () => {
                       safe.getHours(),
                       safe.getMinutes(),
                       0,
-                      0
+                      0,
                     );
                   });
                 }
@@ -293,7 +305,12 @@ const FoundItemForm: React.FC = () => {
       )}
 
       <LocationPicker
-        onLocationSelect={(lat: number, lng: number, addr?: string) => {
+        resetSignal={locationResetSignal}
+        onLocationSelect={(lat, lng, addr) => {
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+            setLocation(null);
+            return;
+          }
           setLocation({ lat, lng, address: addr });
         }}
       />
@@ -352,8 +369,8 @@ const FoundItemForm: React.FC = () => {
         {contactMethod === "email"
           ? "(e-mail)"
           : contactMethod === "phone"
-          ? "(telefon)"
-          : "(np. Messenger)"}{" "}
+            ? "(telefon)"
+            : "(np. Messenger)"}{" "}
         *
       </Text>
       <TextInput
@@ -364,8 +381,8 @@ const FoundItemForm: React.FC = () => {
           contactMethod === "email"
             ? "jan.kowalski@example.com"
             : contactMethod === "phone"
-            ? "500 600 700"
-            : "Np. Link do profilu"
+              ? "500 600 700"
+              : "Np. Link do profilu"
         }
         autoCapitalize={contactMethod === "email" ? "none" : "sentences"}
         keyboardType={contactMethod === "phone" ? "phone-pad" : "default"}

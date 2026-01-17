@@ -29,7 +29,7 @@ const MapScreen = () => {
   useFocusEffect(
     useCallback(() => {
       setRefreshToken((x) => x + 1);
-    }, [])
+    }, []),
   );
 
   const toggleFilters = () => {
@@ -44,7 +44,7 @@ const MapScreen = () => {
 
   const toggleDraftCat = (c: string) => {
     setCatsDraft((prev) =>
-      prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]
+      prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c],
     );
   };
 
@@ -80,7 +80,7 @@ const MapScreen = () => {
         createdBy: it.createdBy,
       }));
     },
-    [query, catsApplied]
+    [query, catsApplied],
   );
 
   const closeFilters = () => {
