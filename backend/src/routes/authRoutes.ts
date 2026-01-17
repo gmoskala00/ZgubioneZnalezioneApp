@@ -30,12 +30,12 @@ router.post("/register", async (req: Request, res: Response): Promise<any> => {
   try {
     const existingEmail = await User.findOne({ email });
     if (existingEmail) {
-      return res.status(409).json({ message: "Email already in use" });
+      return res.status(409).json({ message: "Email zajęty" });
     }
 
     const existingUsername = await User.findOne({ username });
     if (existingUsername) {
-      return res.status(409).json({ message: "Username already taken" });
+      return res.status(409).json({ message: "Nazwa użytkownika zajęta" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -53,7 +53,7 @@ router.post("/register", async (req: Request, res: Response): Promise<any> => {
     });
 
     res.status(201).json({
-      message: "User registered succesfully",
+      message: "Zarejestrowano",
       token,
       user: { _id: newUser._id },
     });
@@ -83,13 +83,13 @@ router.post("/login", async (req: Request, res: Response): Promise<any> => {
     if (!user) {
       return res
         .status(404)
-        .json({ message: "Not Found account with given email" });
+        .json({ message: "Brak konta o podanym adresie email" });
     }
 
     const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (!passwordMatch) {
-      return res.status(401).json({ message: "Wrong password." });
+      return res.status(401).json({ message: "Złe hasło." });
     }
 
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, {
@@ -97,7 +97,7 @@ router.post("/login", async (req: Request, res: Response): Promise<any> => {
     });
 
     res.status(200).json({
-      message: "Logged in Successfully",
+      message: "Zalogowano prawidłowo",
       token,
       user: {
         _id: user?._id,
